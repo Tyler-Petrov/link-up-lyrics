@@ -1,0 +1,43 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.formatOnSave": false,
+		"explorer.sortOrder": "filesFirst",
+		"workbench.editor.showTabs": "multiple",
+		"workbench.activityBar.location": "top",
+		"explorer.openEditors.visible": 20,
+		"explorer.autoReveal": true,
+		"workbench.editor.labelFormat": "short",
+		"files.autoSave": "onWindowChange",
+		// "explorer.compactFolders": false,
+		"files.associations": {
+			"**/src/app.css": "tailwindcss"
+		},
+		"search.exclude": {
+			"**/.cursor": true,
+		},
+		"typescript.tsdk": "node_modules/typescript/lib",
+		// "editor.codeActionsOnSave": {
+		// 	"source.addMissingImports": "always",
+		// 	"source.removeUnusedImports": "always",
+		// 	"source.addMissingImports.ts": "always"
+		// }
+		"workbench.tree.indent": 15,
+		"typescript.format.semicolons": "ignore",
+	},
+	"extensions": {
+		"recommendations": [
+			"akamud.vscode-theme-onedark",
+			"k--kato.intellij-idea-keybindings",
+			"ms-vscode.vscode-typescript-next",
+			"svelte.svelte-vscode",
+			"bradlc.vscode-tailwindcss",
+			"yoavbls.pretty-ts-errors",
+			"vscode-icons-team.vscode-icons"
+		]
+	}
+}

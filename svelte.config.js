@@ -4,6 +4,14 @@ import adapter from '@sveltejs/adapter-vercel';
 const config = {
     kit: {
         adapter: adapter(),
+		alias: {
+			$components: "./src/components",
+			$lib: "./src/lib",
+			$convex: "./src/convex",
+			$shadcn: "./src/components/ui",
+			$routes: "./src/routes",
+			$src: "./src",
+		},
     },
     compilerOptions: {
         experimental: {

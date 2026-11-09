@@ -10,11 +10,11 @@
  */
 import { useConvexClient } from 'convex-svelte';
 import type { FunctionReference } from 'convex/server';
-import { ConvexError } from 'convex/values';
 import { tick, untrack } from 'svelte';
 import { toast } from 'svelte-sonner';
 import * as v from 'valibot';
 import type { ValibotMutationResult } from '#convex/functions.js';
+import { errorMessage } from '#lib/errors.js';
 
 type FormData = Record<string, unknown>;
 type MaybePromise<T> = T | Promise<T>;
@@ -132,11 +132,7 @@ export class Form<TSchema extends v.GenericSchema<FormData>> {
 		} catch (error) {
 			this.submissionState = 'submitted';
 			this.submissionError = error;
-			toast.error(
-				error instanceof ConvexError
-					? String(error.data)
-					: 'Something went wrong. Please try again.'
-			);
+			toast.error(errorMessage(error));
 			console.error(error);
 		}
 	};
@@ -175,8 +171,9 @@ export function createConvexForm<
 				result.errors.forEach((error) => form.setFieldErrors(error.key, error.message));
 				return { resetForm: false };
 			}
-			state.open = false;
+			// Then close: a form that navigates stays open on its pending state until the next page replaces it.
 			await params.afterSuccessfulSubmit?.({ data, response: result.response });
+			state.open = false;
 		}
 	});
 	const state = $state({ open: false });

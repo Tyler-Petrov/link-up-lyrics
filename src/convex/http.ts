@@ -31,13 +31,21 @@ http.route({
 function parseSubscriptionItemEvent(event: unknown) {
 	if (!isRecord(event) || typeof event.type !== 'string') return null;
 	if (!event.type.startsWith('subscriptionItem.')) return undefined;
-	const data = event.data;
+	// When Clerk created the event, not when this delivery was sent: retries keep it, so it orders events.
+	const { data, timestamp: eventEpoch } = event;
+	if (typeof eventEpoch !== 'number') return null;
 	if (!isRecord(data) || !isRecord(data.payer) || !isRecord(data.plan)) return null;
 	const { user_id: clerkUserId } = data.payer;
 	const { slug: planSlug } = data.plan;
 	// Organization payers have no user_id; v1 bills people only. §12.
 	if (typeof clerkUserId !== 'string' || typeof planSlug !== 'string') return undefined;
-	return { type: event.type, clerkUserId, planSlug, isFreeTrial: data.is_free_trial === true };
+	return {
+		type: event.type,
+		eventEpoch,
+		clerkUserId,
+		planSlug,
+		isFreeTrial: data.is_free_trial === true
+	};
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -50,8 +58,10 @@ async function verifySvix(secret: string, headers: Headers, body: string) {
 	const timestamp = headers.get('svix-timestamp');
 	const signatures = headers.get('svix-signature');
 	if (!id || !timestamp || !signatures) return false;
-	// Reject replays older (or newer) than five minutes.
-	if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 5 * 60) return false;
+	// Reject replays older (or newer) than five minutes. NaN would compare false, so check it's a number.
+	const sentSeconds = Number(timestamp);
+	if (!Number.isFinite(sentSeconds) || Math.abs(Date.now() / 1000 - sentSeconds) > 5 * 60)
+		return false;
 
 	const key = await crypto.subtle.importKey(
 		'raw',

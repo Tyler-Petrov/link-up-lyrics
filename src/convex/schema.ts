@@ -26,6 +26,8 @@ export default defineSchema({
 		pastDueSinceEpoch: v.optional(epoch()),
 		graceEndsEpoch: v.optional(epoch()), // pinned at failure, not recomputed
 		paymentFailureReason: v.optional(v.string()),
+		/* Clerk's timestamp on the last billing event applied, so a late retry of an older one is ignored. */
+		billingEventEpoch: v.optional(epoch()),
 		/* Comped access, granted by us and independent of Clerk. §13.2. */
 		compedUntilEpoch: v.optional(epoch()),
 		compReason: v.optional(v.string()),

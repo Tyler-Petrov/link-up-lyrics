@@ -36,15 +36,19 @@ export const comp = internalMutation({
  * - active: paying (or trialing) and the card is fine. Clears any payment failure.
  * - pastDue: a renewal failed. Hosting carries on for GRACE_DAYS, pinned at the first failure. §13.3.2.
  * - ended: trial over or cancellation took effect. Hard stop, no grace: they decided.
+ *
+ * Svix retries can deliver an older event after a newer one, so an event older than the last one applied is
+ * ignored.
  */
 export const applySubscriptionItemEvent = internalMutation({
 	args: {
 		type: v.string(),
+		eventEpoch: epoch(),
 		clerkUserId: v.string(),
 		planSlug: v.string(),
 		isFreeTrial: v.boolean()
 	},
-	handler: async (ctx, { type, clerkUserId, planSlug, isFreeTrial }) => {
+	handler: async (ctx, { type, eventEpoch, clerkUserId, planSlug, isFreeTrial }) => {
 		if (planSlug !== PRO_PLAN_SLUG) return null;
 		const user = await ctx.db
 			.query('User')
@@ -55,6 +59,7 @@ export const applySubscriptionItemEvent = internalMutation({
 			console.warn(`Billing event ${type} for unknown Clerk user ${clerkUserId}`);
 			return null;
 		}
+		if (eventEpoch < (user.billingEventEpoch ?? 0)) return null;
 		const paymentCurrent = {
 			paymentStatusTag: 'current' as const,
 			pastDueSinceEpoch: undefined,
@@ -65,6 +70,7 @@ export const applySubscriptionItemEvent = internalMutation({
 			case 'subscriptionItem.active':
 				await ctx.db.patch('User', user._id, {
 					planTag: isFreeTrial ? 'trialing' : 'pro',
+					billingEventEpoch: eventEpoch,
 					...paymentCurrent
 				});
 				break;
@@ -72,6 +78,7 @@ export const applySubscriptionItemEvent = internalMutation({
 				const failedEpoch = Date.now();
 				await ctx.db.patch('User', user._id, {
 					paymentStatusTag: 'pastDue',
+					billingEventEpoch: eventEpoch,
 					// Dunning retries fire this repeatedly; the first failure sets the clock.
 					pastDueSinceEpoch: user.pastDueSinceEpoch ?? failedEpoch,
 					graceEndsEpoch: user.graceEndsEpoch ?? failedEpoch + GRACE_DAYS * DAY
@@ -79,7 +86,11 @@ export const applySubscriptionItemEvent = internalMutation({
 				break;
 			}
 			case 'subscriptionItem.ended':
-				await ctx.db.patch('User', user._id, { planTag: 'expired', ...paymentCurrent });
+				await ctx.db.patch('User', user._id, {
+					planTag: 'expired',
+					billingEventEpoch: eventEpoch,
+					...paymentCurrent
+				});
 				break;
 		}
 		return null;

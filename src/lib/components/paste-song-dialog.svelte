@@ -13,6 +13,8 @@
 	const form = createConvexForm({
 		schema: createSongFromTextSchema,
 		mutation: api.song.createFromText,
+		// So an empty submit says "Paste the song's words", not that the field is missing.
+		initialData: () => ({ text: '' }),
 		afterSuccessfulSubmit: async ({ response: songId }) => {
 			await goto(`/songs/${songId}`);
 		}
@@ -26,7 +28,7 @@ Chords above the words work too`;
 </script>
 
 <Dialog.Root bind:open={form.state.open}>
-	<Button class="rounded-xl" onclick={() => form.resetOpen()}>
+	<Button class="h-10 rounded-xl px-4" onclick={() => form.resetOpen()}>
 		<ClipboardPaste /> Paste a song
 	</Button>
 	<Dialog.Content class="rounded-2xl sm:max-w-2xl">

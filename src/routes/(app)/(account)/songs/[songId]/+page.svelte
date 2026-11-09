@@ -10,6 +10,7 @@
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import SongChart from '#lib/components/chart/song-chart.svelte';
 	import TransposeControl from '#lib/components/chart/transpose-control.svelte';
+	import SongCredits from '#lib/components/chart/song-credits.svelte';
 	import SongEditor from '#lib/components/editor/song-editor.svelte';
 	import SongDetailsDialog from '#lib/components/editor/song-details-dialog.svelte';
 	import Pencil from '@lucide/svelte/icons/pencil';
@@ -119,7 +120,10 @@
 
 	<footer class="mt-6 flex flex-col items-center gap-1 text-center text-xs text-muted-foreground">
 		<span>{constantByTag('CopyrightSources', song.copyrightSourceTag).name}</span>
-		{#if song.copyrightLine}<span>{song.copyrightLine}</span>{/if}
-		{#if song.ccliSongNumber}<span>CCLI Song #{song.ccliSongNumber}</span>{/if}
+		<SongCredits
+			copyrightLine={song.copyrightLine}
+			ccliSongNumber={song.ccliSongNumber}
+			ccliLicenseNumber={arrangement.ccliLicenseNumber}
+		/>
 	</footer>
 {/if}

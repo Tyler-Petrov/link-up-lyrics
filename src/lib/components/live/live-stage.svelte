@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Spelling } from '#convex/constants.js';
-	import { groupArrangement, type ArrangementBlock, type ChartGroup } from '#lib/chart/index.js';
+	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
 	import { cn } from '#lib/utils.js';
 	import ChartGroupView from './chart-group.svelte';
 	import { TextSizes, type ViewerSettings } from './viewer-settings.svelte.js';
 
 	type Props = {
 		blocks: ArrangementBlock[];
-		focusedGroupIndex: number;
+		/** groupArrangement(blocks), and the focused group's index already clamped to them (the page owns both). */
+		groups: ChartGroup[];
+		groupIndex: number;
 		focusedEpoch: number;
 		showChords: boolean;
 		semitones: number;
@@ -17,7 +19,8 @@
 	};
 	let {
 		blocks,
-		focusedGroupIndex,
+		groups,
+		groupIndex: index,
 		focusedEpoch,
 		showChords,
 		semitones,
@@ -25,9 +28,6 @@
 		settings
 	}: Props = $props();
 
-	const groups = $derived(groupArrangement(blocks));
-	// The song may have lost groups since the leader focused one.
-	const index = $derived(Math.max(0, Math.min(focusedGroupIndex, groups.length - 1)));
 	const current = $derived(groups[index]);
 	const next = $derived(groups[index + 1]);
 

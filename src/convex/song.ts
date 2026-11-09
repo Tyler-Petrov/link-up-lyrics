@@ -39,7 +39,13 @@ export const getArrangement = query({
 		if (!song) return null;
 		const user = await currentUser(ctx);
 		if (!(await canReadSong(ctx, song, user))) return null;
-		return { ...(await loadArrangement(ctx, song)), canEdit: song.ownerId === user?._id };
+		const owner = await ctx.db.get('User', song.ownerId);
+		return {
+			...(await loadArrangement(ctx, song)),
+			canEdit: song.ownerId === user?._id,
+			/* The owner's church license, printed with the credits. §18.7. */
+			ccliLicenseNumber: owner?.ccliLicenseNumber
+		};
 	}
 });
 

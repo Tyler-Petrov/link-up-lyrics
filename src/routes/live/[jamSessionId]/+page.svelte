@@ -9,6 +9,7 @@
 	import LivePresence from '#lib/components/live/live-presence.svelte';
 	import LiveSettings from '#lib/components/live/live-settings.svelte';
 	import LiveStage from '#lib/components/live/live-stage.svelte';
+	import SongCredits from '#lib/components/chart/song-credits.svelte';
 	import { createViewerSettings } from '#lib/components/live/viewer-settings.svelte.js';
 	import type { PageProps } from './$types';
 
@@ -21,7 +22,11 @@
 	const isLive = $derived(live.state === 'live');
 	const focusedItemId = $derived(live.state === 'live' ? live.focusedItemId : undefined);
 	const title = $derived(live.state === 'live' ? live.song.title : undefined);
-	const groupCount = $derived(live.state === 'live' ? groupArrangement(live.blocks).length : 0);
+	const groups = $derived(live.state === 'live' ? groupArrangement(live.blocks) : []);
+	// The song may have lost groups since the leader focused one.
+	const groupIndex = $derived(
+		live.state === 'live' ? Math.max(0, Math.min(live.focusedGroupIndex, groups.length - 1)) : 0
+	);
 
 	/* "Now: <title>" for a few seconds when the leader moves to another song (not on first load). */
 	let nowTitle = $state<string>();
@@ -49,13 +54,18 @@
 	$effect(() => {
 		if (!isLive || !('wakeLock' in navigator)) return;
 		let lock: WakeLockSentinel | undefined;
+		let disposed = false;
 		const acquire = async () => {
 			if (document.visibilityState !== 'visible' || (lock && !lock.released)) return;
-			lock = await navigator.wakeLock.request('screen').catch(() => undefined);
+			const acquired = await navigator.wakeLock.request('screen').catch(() => undefined);
+			// Ended while the request was out: let go instead of holding the screen on.
+			if (disposed) void acquired?.release();
+			else lock = acquired;
 		};
 		void acquire();
 		document.addEventListener('visibilitychange', acquire);
 		return () => {
+			disposed = true;
 			document.removeEventListener('visibilitychange', acquire);
 			void lock?.release();
 		};
@@ -118,28 +128,35 @@
 		>
 			<LiveStage
 				blocks={live.blocks}
-				focusedGroupIndex={live.focusedGroupIndex}
+				{groups}
+				{groupIndex}
 				focusedEpoch={live.focusedEpoch}
 				showChords={live.isPlayer}
 				semitones={live.transposeSemitones}
 				spelling={keySpelling(live.song.originalKeyTag, live.transposeSemitones)}
 				{settings}
 			/>
+			<SongCredits
+				copyrightLine={live.song.copyrightLine}
+				ccliSongNumber={live.song.ccliSongNumber}
+				ccliLicenseNumber={live.ccliLicenseNumber}
+				class="mt-10 opacity-70"
+			/>
 		</main>
 
 		<!-- Where we are in the song: one segment per group, the current one lit. -->
 		<footer
 			class="fixed inset-x-0 bottom-0 z-20 bg-gradient-to-t from-background from-40% to-transparent px-6 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]"
-			aria-label="Group {Math.min(live.focusedGroupIndex, groupCount - 1) + 1} of {groupCount}"
+			aria-label="Group {groupIndex + 1} of {groups.length}"
 		>
 			<div class="mx-auto flex max-w-md gap-1">
-				{#each { length: groupCount }, index (index)}
+				{#each groups as group (group.key)}
 					<span
 						class={[
 							'h-1.5 flex-1 rounded-full transition-colors duration-500',
-							index === live.focusedGroupIndex
+							group.index === groupIndex
 								? 'bg-primary shadow-[0_0_10px_var(--color-primary)]'
-								: index < live.focusedGroupIndex
+								: group.index < groupIndex
 									? 'bg-primary/40'
 									: 'bg-muted-foreground/15'
 						]}

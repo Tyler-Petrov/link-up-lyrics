@@ -102,15 +102,16 @@ export const watch = query({
 });
 
 /**
- * Keeps this tab counted as watching while the session is live. `sessionId` is per tab; signed-in people
- * count once however many tabs they have open. Rate-limited per tab and per room, since the URL is public by
- * design and the tab id is the client's to choose.
+ * Keeps this tab counted while it has the live page open, live or still waiting, so the console counts the room
+ * before the leader goes live. `sessionId` is per tab; signed-in people count once however many tabs they have
+ * open. Rate-limited per tab and per room, since the URL is public by design and the tab id is the client's to
+ * choose.
  */
 export const heartbeat = mutation({
 	args: { jamSessionId: v.id('JamSession'), sessionId: v.string(), interval: v.number() },
 	handler: async (ctx, { jamSessionId, sessionId, interval }) => {
 		const session = await ctx.db.get('JamSession', jamSessionId);
-		if (!session?.isLive) throw new ConvexError('NOT_LIVE');
+		if (!session) throw new ConvexError('NOT_FOUND');
 		await rateLimiter.limit(ctx, 'liveHeartbeat', { key: sessionId, throws: true });
 		await rateLimiter.limit(ctx, 'liveRoomHeartbeat', { key: jamSessionId, throws: true });
 		const user = await currentUser(ctx);

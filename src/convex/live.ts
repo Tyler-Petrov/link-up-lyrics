@@ -25,7 +25,8 @@ export const watch = query({
 		if (!session) return { state: 'notFound' } as const;
 		if (!session.isLive) return { state: 'offline', name: session.name } as const;
 
-		const item = session.focusedItemId && (await ctx.db.get('JamSessionItem', session.focusedItemId));
+		const item =
+			session.focusedItemId && (await ctx.db.get('JamSessionItem', session.focusedItemId));
 		const song = item && (await ctx.db.get('Song', item.contentRef._id));
 		if (!item || !song) return { state: 'waiting', name: session.name } as const;
 

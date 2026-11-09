@@ -130,15 +130,20 @@ export default defineSchema({
 		.index('by_invitedEmail', ['invitedEmail']),
 
 	/*
-	 * One row per song shown in a live session, for the church's CCLI usage report (per-date CSV). The
-	 * song's CCLI fields are copied in, so the report stays right if the song is edited or deleted. §18.4.
+	 * One row per song shown in a live session, for the church's CCLI usage report (per-date CSV). A
+	 * historical record: the song's credits are copied in when it's shown, so the report stays right if the
+	 * song is edited or deleted (deleting a song never touches these). Rows from before the copy have only
+	 * title and ccliSongNumber. §18.4.
 	 */
 	SongUsage: defineTable({
 		ownerId: v.id('User'), // the session owner, whose church reports it
 		jamSessionId: v.id('JamSession'),
 		songId: v.id('Song'),
 		title: v.string(),
+		artist: v.optional(v.string()),
 		ccliSongNumber: v.optional(v.string()),
+		copyrightSourceTag: v.optional(convexTagValidator('CopyrightSources')),
+		copyrightLine: v.optional(v.string()),
 		usedEpoch: epoch()
 	})
 		.index('by_ownerId_and_usedEpoch', ['ownerId', 'usedEpoch'])

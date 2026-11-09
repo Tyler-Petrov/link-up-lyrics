@@ -46,7 +46,8 @@ triggers.register('User', async (ctx, change) => {
 	}
 });
 
-/* Deleting a song deletes its lines, sections and setlist appearances. */
+/* Deleting a song deletes its lines, sections and setlist appearances. Its SongUsage rows stay: they are */
+/* the CCLI history, with the credits copied in. */
 triggers.register('Song', async (ctx, change) => {
 	if (change.operation !== 'delete') return;
 	const songId = change.id;

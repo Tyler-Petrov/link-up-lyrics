@@ -62,12 +62,16 @@ export async function recordSongUsage(
 		.take(MAX_ITEMS);
 	if (recent.some((usage) => usage.songId === song._id)) return;
 
+	// The credits as shown tonight, so later edits or deleting the song don't rewrite the report.
 	await ctx.db.insert('SongUsage', {
 		ownerId: session.ownerId,
 		jamSessionId: session._id,
 		songId: song._id,
 		title: song.title,
+		artist: song.artist,
 		ccliSongNumber: song.ccliSongNumber,
+		copyrightSourceTag: song.copyrightSourceTag,
+		copyrightLine: song.copyrightLine,
 		usedEpoch: now
 	});
 }

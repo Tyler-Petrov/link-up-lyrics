@@ -15,12 +15,16 @@ import { requireCanHost } from './model/billing';
 
 const MAX_BAND = 200;
 
-/** The session's owner and its current band (invited and accepted), for the console's Band panel. Leader+. */
+/**
+ * The session's owner and its current band (invited and accepted), for the console's Band panel. Leader+;
+ * emails only for the owner, who manages the band.
+ */
 export const listForSession = authQuery({
 	args: { jamSessionId: v.id('JamSession') },
 	handler: async (ctx, { jamSessionId }) => {
 		const { session, role } = await requireJamSessionRole(ctx, jamSessionId, 'leader');
 		const owner = (await ctx.db.get('User', session.ownerId))!;
+		const canManage = role === 'owner';
 		const members = [];
 		for (const statusTag of ['accepted', 'invited'] as const) {
 			const rows = await ctx.db
@@ -29,19 +33,23 @@ export const listForSession = authQuery({
 					q.eq('jamSessionId', jamSessionId).eq('statusTag', statusTag)
 				)
 				.take(MAX_BAND);
-			for (const member of rows) {
+			for (const { invitedEmail, ...member } of rows) {
 				const user = member.userId && (await ctx.db.get('User', member.userId));
 				members.push({
 					...member,
 					name: user ? user.name : undefined,
-					email: user ? user.email : member.invitedEmail,
+					email: canManage ? (user ? user.email : invitedEmail) : undefined,
 					imageUrl: user ? user.imageUrl : undefined
 				});
 			}
 		}
 		return {
-			owner: { name: owner.name, email: owner.email, imageUrl: owner.imageUrl },
-			canManage: role === 'owner',
+			owner: {
+				name: owner.name,
+				email: canManage ? owner.email : undefined,
+				imageUrl: owner.imageUrl
+			},
+			canManage,
 			members
 		};
 	}

@@ -11,6 +11,9 @@ import { currentUser } from './user';
 
 type Role = ConstantTag<'JamSessionRoles'>;
 
+/** Sessions a person owns or plays in: a few bands' worth. */
+const MAX_SESSIONS = 200;
+
 /** The user's role in the session: "owner" for its owner, else their accepted membership's role. */
 export async function jamSessionRole(
 	ctx: QueryCtx,
@@ -44,17 +47,35 @@ export async function requireJamSessionRole(
 	return { user, session, role: role! };
 }
 
-/** Owner, or on the setlist of a session the user is in. */
+/**
+ * Owner, or on the setlist of a session the user owns or plays in. Walks the user's sessions (a band's
+ * worth), not the song's setlist appearances, which have no bound.
+ */
 export async function canReadSong(ctx: QueryCtx, song: Doc<'Song'>, user: Doc<'User'> | null) {
 	if (!user) return false;
 	if (song.ownerId === user._id) return true;
-	const items = await ctx.db
-		.query('JamSessionItem')
-		.withIndex('by_contentRef', (q) => q.eq('contentRef', { type: 'Song', _id: song._id }))
-		.take(100);
-	for (const item of items) {
-		const session = await ctx.db.get('JamSession', item.jamSessionId);
-		if (session && (await jamSessionRole(ctx, session, user))) return true;
+	const owned = await ctx.db
+		.query('JamSession')
+		.withIndex('by_ownerId', (q) => q.eq('ownerId', user._id))
+		.take(MAX_SESSIONS);
+	const memberships = await ctx.db
+		.query('JamSessionMember')
+		.withIndex('by_userId_and_statusTag', (q) =>
+			q.eq('userId', user._id).eq('statusTag', 'accepted')
+		)
+		.take(MAX_SESSIONS);
+	const contentRef = { type: 'Song' as const, _id: song._id };
+	for (const jamSessionId of [
+		...owned.map((session) => session._id),
+		...memberships.map((membership) => membership.jamSessionId)
+	]) {
+		const item = await ctx.db
+			.query('JamSessionItem')
+			.withIndex('by_jamSessionId_and_contentRef', (q) =>
+				q.eq('jamSessionId', jamSessionId).eq('contentRef', contentRef)
+			)
+			.first();
+		if (item) return true;
 	}
 	return false;
 }

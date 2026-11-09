@@ -106,6 +106,7 @@ export default defineSchema({
 		transposeSemitones: v.number()
 	})
 		.index('by_jamSessionId_and_order', ['jamSessionId', 'order'])
+		.index('by_jamSessionId_and_contentRef', ['jamSessionId', 'contentRef'])
 		.index('by_contentRef', ['contentRef']),
 
 	/* An invited account holder — the people playing. §14.2. */

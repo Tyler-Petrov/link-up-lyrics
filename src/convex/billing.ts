@@ -3,6 +3,7 @@
  * and server checks read only this (model/billing.ts). Comps are ours and independent of Clerk. §13.
  */
 import { ConvexError, v } from 'convex/values';
+import type { MutationCtx } from './_generated/server';
 import { internalMutation } from './functions';
 import { DAY, GRACE_DAYS } from './model/billing';
 import { epoch } from './validators';
@@ -19,21 +20,45 @@ const PRO_PLAN_SLUG = 'pro';
 export const comp = internalMutation({
 	args: { email: v.string(), untilEpoch: epoch(), reason: v.string() },
 	handler: async (ctx, { email, untilEpoch, reason }) => {
-		const user = await ctx.db
-			.query('User')
-			.withIndex('by_email', (q) => q.eq('email', email.trim().toLowerCase()))
-			.first();
-		if (!user) throw new ConvexError(`No user with email ${email}`);
+		const user = await userByEmail(ctx, email);
 		await ctx.db.patch('User', user._id, { compedUntilEpoch: untilEpoch, compReason: reason });
 		return user._id;
 	}
 });
 
 /**
+ * For trying the trial banner without Clerk: a free trial ending at `endsEpoch`, as the webhook records one,
+ * or back to never subscribed without it. A live comp outranks a trial, so lapse it first (billing:comp with
+ * a past untilEpoch).
+ *
+ *   pnpm exec convex run billing:trial '{"email":"…","endsEpoch":1798761600000}'
+ */
+export const trial = internalMutation({
+	args: { email: v.string(), endsEpoch: v.optional(epoch()) },
+	handler: async (ctx, { email, endsEpoch }) => {
+		const user = await userByEmail(ctx, email);
+		await ctx.db.patch('User', user._id, {
+			planTag: endsEpoch ? 'trialing' : 'none',
+			trialEndsEpoch: endsEpoch
+		});
+		return user._id;
+	}
+});
+
+async function userByEmail(ctx: MutationCtx, email: string) {
+	const user = await ctx.db
+		.query('User')
+		.withIndex('by_email', (q) => q.eq('email', email.trim().toLowerCase()))
+		.first();
+	if (!user) throw new ConvexError(`No user with email ${email}`);
+	return user;
+}
+
+/**
  * One Clerk Billing subscription-item event, already verified (http.ts). Only the Pro plan's items matter;
  * the free default plan's events are ignored.
  *
- * - active: paying (or trialing) and the card is fine. Clears any payment failure.
+ * - active: paying (or trialing, until the period end) and the card is fine. Clears any payment failure.
  * - pastDue: a renewal failed. Hosting carries on for GRACE_DAYS, pinned at the first failure. §13.3.2.
  * - ended: trial over or cancellation took effect. Hard stop, no grace: they decided.
  *
@@ -46,9 +71,13 @@ export const applySubscriptionItemEvent = internalMutation({
 		eventEpoch: epoch(),
 		clerkUserId: v.string(),
 		planSlug: v.string(),
-		isFreeTrial: v.boolean()
+		isFreeTrial: v.boolean(),
+		periodEndEpoch: v.optional(epoch())
 	},
-	handler: async (ctx, { type, eventEpoch, clerkUserId, planSlug, isFreeTrial }) => {
+	handler: async (
+		ctx,
+		{ type, eventEpoch, clerkUserId, planSlug, isFreeTrial, periodEndEpoch }
+	) => {
 		if (planSlug !== PRO_PLAN_SLUG) return null;
 		const user = await ctx.db
 			.query('User')
@@ -70,6 +99,7 @@ export const applySubscriptionItemEvent = internalMutation({
 			case 'subscriptionItem.active':
 				await ctx.db.patch('User', user._id, {
 					planTag: isFreeTrial ? 'trialing' : 'pro',
+					trialEndsEpoch: isFreeTrial ? periodEndEpoch : undefined,
 					billingEventEpoch: eventEpoch,
 					...paymentCurrent
 				});
@@ -88,6 +118,7 @@ export const applySubscriptionItemEvent = internalMutation({
 			case 'subscriptionItem.ended':
 				await ctx.db.patch('User', user._id, {
 					planTag: 'expired',
+					trialEndsEpoch: undefined,
 					billingEventEpoch: eventEpoch,
 					...paymentCurrent
 				});

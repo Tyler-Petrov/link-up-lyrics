@@ -9,7 +9,7 @@
 	import Sparkles from '@lucide/svelte/icons/sparkles';
 	import Lock from '@lucide/svelte/icons/lock';
 	import { api } from '#convex/_generated/api.js';
-	import { canHost, DAY, effectivePlanTag } from '#convex/model/billing.js';
+	import { canHost, DAY, effectivePlanTag, trialEndingSoonEpoch } from '#convex/model/billing.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
 	import { cn } from '#lib/utils.js';
 
@@ -52,10 +52,22 @@
 				icon: Gift,
 				text: `Free hosting until ${longDate.format(user.compedUntilEpoch)}`
 			} as const;
+		if (trialEndingSoonEpoch(user, now))
+			return {
+				tone: 'notice',
+				icon: Sparkles,
+				text: `Your free trial ends ${date.format(user.trialEndsEpoch)}. Pick a plan to keep hosting.`,
+				action: 'See plans'
+			} as const;
 		return {
 			tone: 'ok',
 			icon: Sparkles,
-			text: plan === 'trialing' ? 'Free trial' : 'Pro'
+			text:
+				plan === 'pro'
+					? 'Pro'
+					: user.trialEndsEpoch
+						? `Free trial ends ${date.format(user.trialEndsEpoch)}`
+						: 'Free trial'
 		} as const;
 	});
 </script>

@@ -44,7 +44,9 @@ function parseSubscriptionItemEvent(event: unknown) {
 		eventEpoch,
 		clerkUserId,
 		planSlug,
-		isFreeTrial: data.is_free_trial === true
+		isFreeTrial: data.is_free_trial === true,
+		// When the current period ends (null for a plan that doesn't renew). On a free trial, when it ends.
+		periodEndEpoch: typeof data.period_end === 'number' ? data.period_end : undefined
 	};
 }
 

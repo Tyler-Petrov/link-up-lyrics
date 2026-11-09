@@ -2,6 +2,7 @@
 	import { SignIn } from 'svelte-clerk/client';
 	import { getAccount } from '#lib/account.svelte.js';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
+	import TrialBanner from '#lib/components/billing/trial-banner.svelte';
 
 	// Pages that need an account. Signed out, they show Clerk's sign-in in place and carry on after it.
 	let { children } = $props();
@@ -9,6 +10,7 @@
 </script>
 
 {#if account.isReady}
+	<TrialBanner />
 	{@render children()}
 {:else if account.isSignedIn}
 	<Skeleton class="mx-auto h-40 w-full rounded-2xl" />

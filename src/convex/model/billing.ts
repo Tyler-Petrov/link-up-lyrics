@@ -11,15 +11,23 @@ import type { QueryCtx } from '../_generated/server';
 
 export const GRACE_DAYS = 7;
 export const DAY = 24 * 60 * 60 * 1000;
+/* The trial banner shows from day 10 of the 14-day trial. §13.1. */
+const TRIAL_WARNING_DAYS = 4;
 
 type BillingFields = Pick<
 	Doc<'User'>,
-	'planTag' | 'paymentStatusTag' | 'graceEndsEpoch' | 'compedUntilEpoch'
+	'planTag' | 'paymentStatusTag' | 'graceEndsEpoch' | 'compedUntilEpoch' | 'trialEndsEpoch'
 >;
 
 /** The plan that applies right now: a live comp counts as Pro, whatever Clerk says. §13.2. */
 export function effectivePlanTag(user: BillingFields, now: number) {
 	return (user.compedUntilEpoch ?? 0) > now ? 'pro' : user.planTag;
+}
+
+/** When their free trial ends, if it ends within TRIAL_WARNING_DAYS and nothing else covers them. */
+export function trialEndingSoonEpoch(user: BillingFields, now: number) {
+	if (effectivePlanTag(user, now) !== 'trialing' || !user.trialEndsEpoch) return undefined;
+	return user.trialEndsEpoch - now <= TRIAL_WARNING_DAYS * DAY ? user.trialEndsEpoch : undefined;
 }
 
 /** Whether this person's sessions can be created, taken live and invited to. */

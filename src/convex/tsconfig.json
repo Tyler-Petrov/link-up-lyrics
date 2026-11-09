@@ -1,0 +1,22 @@
+{
+	/* The environment Convex functions run in, used to typecheck them (`pnpm check`). */
+	"compilerOptions": {
+		"allowJs": true,
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"moduleResolution": "Bundler",
+		"skipLibCheck": true,
+		"types": ["node"],
+		"allowSyntheticDefaultImports": true,
+
+		/* These compiler options are required by Convex */
+		"target": "ESNext",
+		"lib": ["ES2023", "dom"],
+		"forceConsistentCasingInFileNames": true,
+		"module": "ESNext",
+		"isolatedModules": true,
+		"noEmit": true
+	},
+	"include": ["./**/*", "../lib/chart/**/*", "../types.d.ts"],
+	"exclude": ["./_generated"]
+}

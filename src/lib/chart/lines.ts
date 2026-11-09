@@ -1,0 +1,102 @@
+/*
+ * A line is an array of characters, each optionally carrying a chord (plan §6). These turn it into render
+ * segments, and to and from the inline bracket syntax (`[G]Amazing [G7]grace`) that paste, ChordPro import
+ * and the desktop editor share. Pure.
+ */
+import type { ChartCharacter, Chord } from '#convex/validators.js';
+import { chordToText, parseChord } from './chords';
+
+/* Convex's runtime may lack Intl.Segmenter; code points are the fallback there. */
+const graphemeSegmenter =
+	typeof Intl !== 'undefined' && 'Segmenter' in Intl
+		? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+		: undefined;
+
+/** Graphemes, so accents and emoji stay one character each. */
+export function graphemes(text: string) {
+	if (!graphemeSegmenter) return [...text];
+	return Array.from(graphemeSegmenter.segment(text), (segment) => segment.segment);
+}
+
+/** Plain characters, no chords. */
+export function toCharacters(text: string): ChartCharacter[] {
+	return graphemes(text).map((character) => ({ character }));
+}
+
+/** The line's words. */
+export function lineText(characters: ChartCharacter[]) {
+	return characters.map((c) => c.character).join('');
+}
+
+export function hasChords(characters: ChartCharacter[]) {
+	return characters.some((c) => c.chord);
+}
+
+/** Only spaces (with or without chords): an instrumental line. */
+export function isInstrumental(characters: ChartCharacter[]) {
+	return characters.every((c) => c.character.trim() === '');
+}
+
+export type Segment = {
+	/** Index of the segment's first character in the line, a stable key. */
+	start: number;
+	chord?: Chord;
+	text: string;
+};
+
+/**
+ * Cuts the line at every chord-bearing character. Each segment renders as a two-row column — chord over its
+ * syllable — so chords stay glued to their text while lines wrap naturally. §8.
+ */
+export function segmentCharacters(characters: ChartCharacter[]): Segment[] {
+	const segments: Segment[] = [];
+	characters.forEach((c, index) => {
+		const last = segments.at(-1);
+		if (!last || c.chord) segments.push({ start: index, chord: c.chord, text: c.character });
+		else last.text += c.character;
+	});
+	return segments;
+}
+
+/** Characters with every chord removed: what the room sees on the live page. */
+export function stripChords(characters: ChartCharacter[]): ChartCharacter[] {
+	return characters.map((c) => ({ character: c.character }));
+}
+
+/**
+ * `[G]Amazing [G7]grace` → characters. A chord attaches to the character after it; a chord with nothing
+ * after it (end of line, or another chord straight after) gets its own space. Brackets that aren't a chord
+ * we can store stay in the text, so nothing typed is lost.
+ */
+export function parseBracketLine(text: string): ChartCharacter[] {
+	const characters: ChartCharacter[] = [];
+	let pending: Chord | undefined;
+	for (const part of text.split(/(\[[^\]\n]*\])/)) {
+		const chord =
+			part.startsWith('[') && part.endsWith(']') ? parseChord(part.slice(1, -1)) : undefined;
+		if (chord) {
+			if (pending) characters.push({ character: ' ', chord: pending });
+			pending = chord;
+			continue;
+		}
+		for (const character of graphemes(part)) {
+			characters.push(pending ? { character, chord: pending } : { character });
+			pending = undefined;
+		}
+	}
+	if (pending) characters.push({ character: ' ', chord: pending });
+	return characters;
+}
+
+/** Characters → `[G]Amazing [G7]grace`. The inverse of parseBracketLine. */
+export function serializeLine(characters: ChartCharacter[]) {
+	return characters
+		.map((c, index) => {
+			if (!c.chord) return c.character;
+			// A trailing chord sits on a padding space that parseBracketLine recreates.
+			const isPadding =
+				c.character === ' ' && (index === characters.length - 1 || characters[index + 1]?.chord);
+			return `[${chordToText(c.chord)}]${isPadding ? '' : c.character}`;
+		})
+		.join('');
+}

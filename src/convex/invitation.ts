@@ -10,19 +10,24 @@ import { env, internalAction, type MutationCtx } from './_generated/server';
 import { rateLimiter } from './components';
 import { authMutation, authQuery, valibotMutation } from './functions';
 import { inviteSchema } from './forms/invitation';
-import { requireJamSessionRole } from './model/access';
+import { atTagOrHigher } from './constants';
+import { jamSessionRole, requireJamSessionRole } from './model/access';
 import { requireCanHost } from './model/billing';
 
 const MAX_BAND = 200;
 
 /**
  * The session's owner and its current band (invited and accepted), for the console's Band panel. Leader+;
- * emails only for the owner, who manages the band.
+ * emails only for the owner, who manages the band. Null, like the console's own query, once the session is
+ * deleted or the caller stops leading it, so a console left open doesn't fail.
  */
 export const listForSession = authQuery({
 	args: { jamSessionId: v.id('JamSession') },
 	handler: async (ctx, { jamSessionId }) => {
-		const { session, role } = await requireJamSessionRole(ctx, jamSessionId, 'leader');
+		const session = await ctx.db.get('JamSession', jamSessionId);
+		if (!session) return null;
+		const role = await jamSessionRole(ctx, session, ctx.user);
+		if (!atTagOrHigher('JamSessionRoles', role, 'leader')) return null;
 		const owner = (await ctx.db.get('User', session.ownerId))!;
 		const canManage = role === 'owner';
 		const members = [];

@@ -1,12 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { useConvexClient } from 'convex-svelte';
+	import { toast } from 'svelte-sonner';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import { api } from '#convex/_generated/api.js';
 	import type { Doc } from '#convex/_generated/dataModel.js';
 	import { renameJamSessionSchema } from '#convex/forms/jam_session.js';
 	import { confirmation } from '#lib/confirmation.svelte.js';
+	import { errorMessage } from '#lib/errors.js';
 	import { createConvexForm } from '#lib/form.svelte.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
@@ -23,15 +25,25 @@
 		initialData: () => ({ jamSessionId: session._id, name: session.name })
 	});
 
+	/*
+	 * Leaves the console first, then deletes: the console's queries never run against a session that's gone, and
+	 * the session slides out of the list you land on.
+	 */
 	async function remove() {
+		const { _id: jamSessionId, name } = session;
 		const confirmed = await confirmation({
 			title: 'Delete jam session',
-			message: `“${session.name}” and its setlist will be deleted, and its QR code will stop working. Your songs stay in your library.`,
+			message: `“${name}” and its setlist will be deleted, and its QR code will stop working. Your songs stay in your library.`,
 			confirmLabel: 'Delete session'
 		});
 		if (!confirmed) return;
-		await client.mutation(api.jam_session.remove, { jamSessionId: session._id });
 		await goto('/jams');
+		try {
+			await client.mutation(api.jam_session.remove, { jamSessionId });
+			toast.success(`Deleted “${name}”`);
+		} catch (error) {
+			toast.error(errorMessage(error, 'Couldn’t delete the session. Try again.'));
+		}
 	}
 </script>
 

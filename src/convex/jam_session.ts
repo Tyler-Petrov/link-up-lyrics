@@ -11,8 +11,8 @@ import { requireCanHost } from './model/billing';
 import { focusPatch, groupCount, loadSetlist, MAX_ITEMS } from './model/jam_session';
 import { presence } from './components';
 import { fitsBetween, orderBetween } from '#lib/chart/index.js';
-import type { Id } from './_generated/dataModel';
-import type { MutationCtx } from './_generated/server';
+import type { Doc, Id } from './_generated/dataModel';
+import type { MutationCtx, QueryCtx } from './_generated/server';
 
 /** Sessions you own, then the ones you play in, each with your role. */
 export const listMine = authQuery({
@@ -39,35 +39,47 @@ export const listMine = authQuery({
 });
 
 /**
- * The console's session and setlist, or null when it doesn't exist or the caller is below leader. Takes the
- * id as a string because it comes straight from the URL.
+ * The session and the caller's role when they lead it, else null: it was deleted, or they're not (or no longer)
+ * a leader. The console's queries return null then, so a console left open shows "Session not found".
+ */
+async function ledSession(ctx: QueryCtx & { user: Doc<'User'> }, jamSessionId: string) {
+	const id = ctx.db.normalizeId('JamSession', jamSessionId);
+	const session = id && (await ctx.db.get('JamSession', id));
+	if (!session) return null;
+	const roleTag = await jamSessionRole(ctx, session, ctx.user);
+	return atTagOrHigher('JamSessionRoles', roleTag, 'leader')
+		? { session, roleTag: roleTag! }
+		: null;
+}
+
+/**
+ * The console's session and setlist, or null (see ledSession). Takes the id as a string because it comes
+ * straight from the URL.
  */
 export const get = authQuery({
 	args: { jamSessionId: v.string() },
 	handler: async (ctx, args) => {
-		const jamSessionId = ctx.db.normalizeId('JamSession', args.jamSessionId);
-		const session = jamSessionId && (await ctx.db.get('JamSession', jamSessionId));
-		if (!session) return null;
-		const roleTag = await jamSessionRole(ctx, session, ctx.user);
-		if (!atTagOrHigher('JamSessionRoles', roleTag, 'leader')) return null;
+		const led = await ledSession(ctx, args.jamSessionId);
+		if (!led) return null;
 
 		const items = [];
-		for (const item of await loadSetlist(ctx, session._id)) {
+		for (const item of await loadSetlist(ctx, led.session._id)) {
 			const song = await ctx.db.get('Song', item.contentRef._id);
 			if (song) items.push({ ...item, song });
 		}
-		return { session, roleTag: roleTag!, items };
+		return { ...led, items };
 	}
 });
 
 /**
- * "27 watching · 4 in the band": who's connected right now, and who's in the band at all. The band is the
- * owner (never a member row) plus accepted members, so a solo leader sees 1. §15.
+ * "27 watching · 4 in the band": who has the live page open right now (waiting or watching), and who's in the
+ * band at all. The band is the owner (never a member row) plus accepted members, so a solo leader sees 1. Null
+ * like `get`. §15.
  */
 export const connectedCount = authQuery({
 	args: { jamSessionId: v.id('JamSession') },
 	handler: async (ctx, { jamSessionId }) => {
-		await requireJamSessionRole(ctx, jamSessionId, 'leader');
+		if (!(await ledSession(ctx, jamSessionId))) return null;
 		const online = await presence.listRoom(ctx, jamSessionId, true, 1000);
 		const members = await ctx.db
 			.query('JamSessionMember')

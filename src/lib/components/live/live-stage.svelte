@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
+	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
 	import type { Spelling } from '#convex/constants.js';
 	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
 	import { cn } from '#lib/utils.js';
@@ -43,7 +44,40 @@
 	const smallerSize = $derived(TextSizes[Math.max(0, TextSizes.indexOf(settings.size) - 1)]!.class);
 
 	const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+	/*
+	 * Whole song follows the current group until the singer scrolls by hand, then waits for "Jump to current".
+	 * Switching to Whole song follows again. Only the singer's own scroll pauses it (one while a finger is down,
+	 * or right after a wheel turn or scroll key), so the page's smooth scrolls to the current group never do.
+	 */
+	let following = $derived(settings.mode === 'song');
+	let touching = false;
+	let intentAt = -Infinity;
+	const ScrollKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
+
+	function onscroll() {
+		if (touching || performance.now() - intentAt < 300) following = false;
+	}
+	/** A wheel turn or scroll key on the page (not in the settings sheet). */
+	function noteIntent(event: Event) {
+		if (!(event.target instanceof Element && event.target.closest('[role="dialog"]')))
+			intentAt = performance.now();
+	}
+	function jumpToCurrent() {
+		intentAt = -Infinity; // the wheel turn or Space just before this press wasn't a scroll away
+		following = true; // the current group's attachment scrolls to it
+	}
+	const trackTouch = (event: TouchEvent) => (touching = event.touches.length > 0);
 </script>
+
+<svelte:window
+	{onscroll}
+	ontouchstart={trackTouch}
+	ontouchend={trackTouch}
+	ontouchcancel={trackTouch}
+	onwheel={noteIntent}
+	onkeydown={(event) => ScrollKeys.has(event.key) && noteIntent(event)}
+/>
 
 {#snippet group(group: ChartGroup, lineClass: string)}
 	<ChartGroupView
@@ -78,7 +112,7 @@
 				)}
 				aria-current={isCurrent ? 'step' : undefined}
 				{@attach (element) => {
-					if (isCurrent)
+					if (isCurrent && following)
 						element.scrollIntoView({
 							block: 'center',
 							behavior: reducedMotion() ? 'instant' : 'smooth'
@@ -89,6 +123,22 @@
 			</div>
 		{/each}
 	</div>
+
+	{#if !following}
+		<!-- Floats just above the progress bar, so it never moves the words. -->
+		<div
+			class="pointer-events-none fixed inset-x-0 bottom-[calc(2.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center"
+		>
+			<button
+				type="button"
+				class="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/40 transition-transform active:scale-95"
+				onclick={jumpToCurrent}
+				transition:fly={{ y: 16, duration: 200 }}
+			>
+				<LocateFixed class="size-4" /> Jump to current
+			</button>
+		</div>
+	{/if}
 {:else if current}
 	<div class="flex flex-col items-center gap-8 text-center">
 		<div class="grid w-full grid-cols-1">

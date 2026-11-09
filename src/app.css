@@ -5,35 +5,38 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Rich brown, two modes, dark first (plan §9). One warm, low-chroma hue scaled light → dark ("bark"), plus
- * a few accents used sparingly: ember for chords, sage for success, clay for danger. The dark mode echoes
- * the old app's Open Props "choco": page #3d210d, surfaces #572f12 / #703a13, text #fce1bc / #f7ca9e,
- * brand #df8545.
+ * Tally: stage graphite with production-booth signals, dark first (plan §9). The neutrals are a cool, nearly
+ * grey graphite so phones and projectors render clean black-greys; three hues each do one job:
+ * aqua does things (and marks where we are), honey-amber is the music (chords), tally red means on air.
+ * Destructive is a pinker ruby so it never reads as Live. Dark text is chalk, a touch warm.
+ *
+ * Mirrored outside this file, keep in step: theme-color hexes in #lib/theme-colors.ts, and static/favicon.svg
+ * (graphite-800 tile, honey-400 note).
  */
 @theme {
-	--color-bark-50: oklch(0.972 0.01 70);
-	--color-bark-100: oklch(0.94 0.02 68);
-	--color-bark-200: oklch(0.885 0.034 66);
-	--color-bark-300: oklch(0.795 0.05 62);
-	--color-bark-400: oklch(0.68 0.068 58);
-	--color-bark-500: oklch(0.565 0.082 54);
-	--color-bark-600: oklch(0.47 0.078 50);
-	--color-bark-700: oklch(0.385 0.066 48);
-	--color-bark-800: oklch(0.305 0.052 46);
-	--color-bark-900: oklch(0.235 0.038 44);
-	--color-bark-950: oklch(0.165 0.026 42);
+	--color-graphite-50: oklch(0.975 0.003 250);
+	--color-graphite-100: oklch(0.945 0.004 250);
+	--color-graphite-200: oklch(0.89 0.006 250);
+	--color-graphite-300: oklch(0.76 0.01 250);
+	--color-graphite-600: oklch(0.47 0.01 250);
+	--color-graphite-700: oklch(0.385 0.01 250);
+	--color-graphite-750: oklch(0.345 0.01 250);
+	--color-graphite-800: oklch(0.3 0.01 250);
+	--color-graphite-850: oklch(0.27 0.009 250);
+	--color-graphite-900: oklch(0.235 0.009 250);
+	--color-graphite-950: oklch(0.165 0.008 250);
+	--color-chalk: oklch(0.96 0.006 85);
 
-	--color-choco-1: #fce1bc;
-	--color-choco-2: #f7ca9e;
-	--color-choco-7: #703a13;
-	--color-choco-8: #572f12;
-	--color-choco-9: #3d210d;
-	--color-brand: #df8545;
-
-	--color-ember-400: oklch(0.8 0.13 72);
-	--color-ember-600: oklch(0.52 0.15 55);
-	--color-sage-500: oklch(0.64 0.09 165);
-	--color-clay-500: oklch(0.62 0.14 25);
+	--color-aqua-400: oklch(0.8 0.1 196);
+	--color-aqua-700: oklch(0.52 0.088 205);
+	--color-honey-400: oklch(0.83 0.145 75);
+	--color-honey-700: oklch(0.52 0.12 62);
+	--color-tally-500: oklch(0.66 0.215 27);
+	--color-tally-600: oklch(0.57 0.22 27);
+	--color-ruby-400: oklch(0.7 0.16 5);
+	--color-ruby-600: oklch(0.55 0.2 5);
+	--color-mint-400: oklch(0.78 0.15 155);
+	--color-mint-600: oklch(0.53 0.13 155);
 
 	--font-chart: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
 }
@@ -41,50 +44,60 @@
 /* Semantic tokens (shadcn's names, so its components follow the palette). mode-watcher toggles .dark. */
 :root {
 	--radius: 0.875rem;
-	--background: var(--color-bark-50);
-	--foreground: var(--color-bark-950);
-	--card: oklch(0.99 0.006 75);
-	--card-foreground: var(--color-bark-950);
-	--popover: oklch(0.99 0.006 75);
-	--popover-foreground: var(--color-bark-950);
-	--primary: oklch(0.56 0.14 52);
-	--primary-foreground: var(--color-bark-50);
-	--secondary: var(--color-bark-100);
-	--secondary-foreground: var(--color-bark-900);
-	--muted: var(--color-bark-100);
-	--muted-foreground: var(--color-bark-600);
-	--accent: var(--color-bark-200);
-	--accent-foreground: var(--color-bark-950);
-	--destructive: var(--color-clay-500);
-	--success: var(--color-sage-500);
-	--border: oklch(0.385 0.066 48 / 12%);
-	--input: oklch(0.385 0.066 48 / 18%);
-	--ring: oklch(0.56 0.14 52 / 60%);
-	--chord: var(--color-ember-600);
-	--glow: oklch(0.56 0.14 52 / 25%);
+	--background: var(--color-graphite-50);
+	--foreground: var(--color-graphite-950);
+	--card: oklch(1 0 0);
+	--card-foreground: var(--color-graphite-950);
+	--popover: oklch(1 0 0);
+	--popover-foreground: var(--color-graphite-950);
+	--primary: var(--color-aqua-700);
+	--primary-foreground: oklch(1 0 0);
+	--secondary: var(--color-graphite-100);
+	--secondary-foreground: var(--color-graphite-950);
+	--muted: var(--color-graphite-100);
+	--muted-foreground: var(--color-graphite-600);
+	--accent: var(--color-graphite-200);
+	--accent-foreground: var(--color-graphite-950);
+	--destructive: var(--color-ruby-600);
+	--success: var(--color-mint-600);
+	--border: color-mix(in oklab, var(--color-graphite-700) 12%, transparent);
+	--input: color-mix(in oklab, var(--color-graphite-700) 18%, transparent);
+	/* Focus is the text colour, so it never reads as the aqua "current" outline. */
+	--ring: color-mix(in oklab, var(--color-graphite-950) 70%, transparent);
+	--chord: var(--color-honey-700);
+	--live: var(--color-tally-600);
+	/* The page-title halo is a dark-mode effect; on a light page it only smudges. */
+	--glow: transparent;
 }
 
 .dark {
-	--background: var(--color-choco-9);
-	--foreground: var(--color-choco-1);
-	--card: var(--color-choco-8);
-	--card-foreground: var(--color-choco-1);
-	--popover: var(--color-choco-8);
-	--popover-foreground: var(--color-choco-1);
-	--primary: var(--color-brand);
-	--primary-foreground: #2a1608;
-	--secondary: var(--color-choco-7);
-	--secondary-foreground: var(--color-choco-1);
-	--muted: oklch(0.32 0.06 50);
-	--muted-foreground: oklch(0.86 0.06 65 / 75%);
-	--accent: var(--color-choco-7);
-	--accent-foreground: var(--color-choco-1);
-	--destructive: oklch(0.7 0.15 28);
-	--border: oklch(0.94 0.05 75 / 10%);
-	--input: oklch(0.94 0.05 75 / 14%);
-	--ring: oklch(0.72 0.14 55 / 60%);
-	--chord: var(--color-ember-400);
-	--glow: oklch(0.72 0.14 55 / 30%);
+	--background: var(--color-graphite-950);
+	--foreground: var(--color-chalk);
+	--card: var(--color-graphite-900);
+	--card-foreground: var(--color-chalk);
+	--popover: var(--color-graphite-900);
+	--popover-foreground: var(--color-chalk);
+	--primary: var(--color-aqua-400);
+	--primary-foreground: var(--color-graphite-950);
+	--secondary: var(--color-graphite-800);
+	--secondary-foreground: var(--color-chalk);
+	--muted: var(--color-graphite-850);
+	--muted-foreground: var(--color-graphite-300);
+	--accent: var(--color-graphite-750);
+	--accent-foreground: var(--color-chalk);
+	--destructive: var(--color-ruby-400);
+	--success: var(--color-mint-400);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 14%);
+	--ring: color-mix(in oklab, var(--color-chalk) 70%, transparent);
+	--chord: var(--color-honey-400);
+	--live: var(--color-tally-500);
+	--glow: color-mix(in oklab, var(--color-aqua-400) 18%, transparent);
+}
+
+/* /live and the projector view: near-true black, so a projector's black level disappears. Always with .dark. */
+.stage {
+	--background: oklch(0.13 0.005 250);
 }
 
 @theme inline {
@@ -108,6 +121,7 @@
 	--color-input: var(--input);
 	--color-ring: var(--ring);
 	--color-chord: var(--chord);
+	--color-live: var(--live);
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-lg: var(--radius);

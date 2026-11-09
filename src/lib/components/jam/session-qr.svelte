@@ -3,8 +3,9 @@
 	import { cn } from '#lib/utils.js';
 
 	/*
-	 * The live page's QR, drawn here (server and browser alike) rather than fetched: cream rounded modules on
-	 * brown, like the old app, with soft "eyes" for the three finder patterns. Plan §11.
+	 * The live page's QR, drawn here (server and browser alike) rather than fetched: rounded modules in the
+	 * text colour on the page colour (callers can recolour both), with soft "eyes" for the three finder
+	 * patterns, and the four-module quiet zone scanners expect. Plan §11.
 	 */
 	let { url, class: className }: { url: string; class?: string } = $props();
 
@@ -21,17 +22,19 @@
 		[qr.size - 7, 0],
 		[0, qr.size - 7]
 	]);
-	const padding = 2.5;
+	const padding = 4;
 </script>
 
-<div class={cn('rounded-3xl bg-choco-8 p-3 shadow-inner shadow-black/30', className)}>
+<div
+	class={cn('rounded-3xl bg-background text-foreground shadow-inner shadow-black/30', className)}
+>
 	<svg
 		viewBox="{-padding} {-padding} {qr.size + padding * 2} {qr.size + padding * 2}"
 		class="block h-auto w-full"
 		role="img"
 		aria-label="QR code for {url}"
 	>
-		<g fill="#fce1bc">
+		<g fill="currentColor">
 			{#each modules as module (`${module.x}:${module.y}`)}
 				<rect x={module.x + 0.08} y={module.y + 0.08} width="0.84" height="0.84" rx="0.32" />
 			{/each}
@@ -43,7 +46,7 @@
 					height="6"
 					rx="1.9"
 					fill="none"
-					stroke="#fce1bc"
+					stroke="currentColor"
 					stroke-width="1"
 				/>
 				<rect x={x! + 2} y={y! + 2} width="3" height="3" rx="0.9" />

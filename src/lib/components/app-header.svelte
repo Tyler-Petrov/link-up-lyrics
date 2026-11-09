@@ -26,7 +26,8 @@
 	class="sticky top-3 z-40 mx-auto flex w-[min(100%-1.5rem,64rem)] items-center gap-2 rounded-2xl bg-card/85 px-3 py-2 shadow-lg shadow-black/20 backdrop-blur-md sm:gap-4 sm:px-4"
 >
 	<a href="/" class="flex shrink-0 items-center gap-2 rounded-lg font-[750] tracking-tight">
-		<span class="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground">
+		<!-- The mark is always the dark tile with an amber note, like the favicon: music, not a control. -->
+		<span class="dark grid size-8 place-items-center rounded-xl bg-secondary text-chord">
 			<Music class="size-4" />
 		</span>
 		<span class="hidden sm:inline">Link Up Lyrics</span>

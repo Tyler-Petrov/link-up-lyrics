@@ -6,8 +6,8 @@
 <script lang="ts">
 	/*
 	 * A slim note from day 10 of the 14-day trial: the trial deadline is the whole conversion mechanism, so it
-	 * says the date once, quietly, across the signed-in app. Never on /live: billing is between us and the
-	 * owner, not the room. §13.1.
+	 * says the date once, quietly, across the signed-in app. Never on /live, nor on the jam console the night
+	 * is run from: billing is between us and the owner, not the room. §13.1.
 	 */
 	import { slide } from 'svelte/transition';
 	import { page } from '$app/state';
@@ -16,6 +16,7 @@
 	import { api } from '#convex/_generated/api.js';
 	import { trialEndingSoonEpoch } from '#convex/model/billing.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { Button } from '#lib/components/ui/button/index.js';
 
 	const user = $derived(await convexQuery(api.user.me, {}));
 	const endsEpoch = $derived(trialEndingSoonEpoch(user, Date.now()));
@@ -26,7 +27,7 @@
 	});
 </script>
 
-{#if endsEpoch && !dismissed}
+{#if endsEpoch && !dismissed && page.route.id !== '/(app)/(account)/jams/[jamSessionId]'}
 	<div
 		transition:slide={{ duration: 200 }}
 		role="status"
@@ -44,13 +45,14 @@
 				>
 			{/if}
 		</p>
-		<button
-			type="button"
+		<Button
+			variant="ghost"
+			size="icon"
+			class="shrink-0 rounded-xl text-muted-foreground"
 			aria-label="Dismiss"
-			class="grid size-8 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 			onclick={() => (dismissed = true)}
 		>
-			<X class="size-4" />
-		</button>
+			<X />
+		</Button>
 	</div>
 {/if}

@@ -38,11 +38,11 @@
 {#if musicOnly}
 	<div
 		class={cn(
-			'flex items-center gap-3 rounded-2xl border border-dashed border-primary/30 bg-primary/5 px-5 py-4 text-muted-foreground',
+			'flex items-center gap-3 rounded-2xl border border-dashed border-muted-foreground/40 bg-foreground/[0.035] px-5 py-4 text-muted-foreground',
 			className
 		)}
 	>
-		<AudioLines class="size-[1.2em] shrink-0 text-primary" />
+		<AudioLines class="size-[1.2em] shrink-0 text-chord" />
 		<span class="flex flex-col">
 			<span class="font-semibold text-foreground">
 				{block.type === 'section' ? block.section.name : 'Interlude'}

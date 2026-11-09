@@ -74,7 +74,6 @@
 
 <svelte:head>
 	<title>{live.state === 'notFound' ? 'Not found' : live.name} · Link Up Lyrics</title>
-	<meta name="theme-color" content="#3d210d" />
 </svelte:head>
 
 {#if live.state !== 'notFound'}
@@ -157,7 +156,7 @@
 						class={[
 							'h-1.5 flex-1 rounded-full transition-colors duration-500',
 							group.index === groupIndex
-								? 'bg-primary shadow-[0_0_10px_var(--color-primary)]'
+								? 'bg-primary shadow-[0_0_10px] shadow-primary/15'
 								: group.index < groupIndex
 									? 'bg-primary/40'
 									: 'bg-muted-foreground/15'
@@ -176,9 +175,9 @@
 			{:else}
 				<span class="relative grid size-16 place-items-center" aria-hidden="true">
 					<span
-						class="absolute inset-0 animate-ping rounded-full bg-primary/15 [animation-duration:2.4s]"
+						class="absolute inset-0 animate-ping rounded-full bg-muted-foreground/15 [animation-duration:2.4s]"
 					></span>
-					<span class="size-4 rounded-full bg-primary/80"></span>
+					<span class="size-4 rounded-full border-2 border-muted-foreground"></span>
 				</span>
 				<h1 class="text-2xl font-bold">
 					{live.state === 'offline' ? 'Not live yet' : 'Picking a song…'}

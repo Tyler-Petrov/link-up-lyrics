@@ -20,7 +20,7 @@
 </svelte:head>
 
 <div
-	class="dark grid min-h-dvh place-items-center bg-background p-[4vmin] text-foreground [color-scheme:dark]"
+	class="dark stage grid min-h-dvh place-items-center bg-background p-[4vmin] text-foreground [color-scheme:dark]"
 >
 	<svelte:boundary pending={browser ? pending : undefined}>
 		{@const live = await convexQuery(api.live.watch, { jamSessionId: params.jamSessionId })}
@@ -32,11 +32,20 @@
 					{live.name}
 				</h1>
 			{/if}
-			<SessionQr url={liveUrl} class="w-[min(70vmin,40rem)] rounded-[3vmin] p-[2.5vmin]" />
+			<!-- Black on white, the way phone cameras across a room read best. -->
+			<SessionQr
+				url={liveUrl}
+				class="w-[min(70vmin,40rem)] rounded-[3vmin] bg-white text-black shadow-none"
+			/>
 			<p class="text-[min(3vmin,1.5rem)] text-muted-foreground">
 				Scan to follow along. No app or account needed.
 			</p>
-			<p class="h-[min(3.2vmin,1.6rem)] text-[min(3vmin,1.5rem)] font-semibold text-primary">
+			<p
+				class={[
+					'h-[min(3.2vmin,1.6rem)] text-[min(3vmin,1.5rem)] font-semibold',
+					live.state === 'live' ? 'text-primary' : 'text-muted-foreground'
+				]}
+			>
 				{#if live.state === 'live'}Now: {live.song.title}{:else if live.state === 'offline'}Starting
 					soon{/if}
 			</p>
@@ -44,6 +53,6 @@
 	</svelte:boundary>
 
 	{#snippet pending()}
-		<span class="size-3 animate-pulse rounded-full bg-primary"></span>
+		<span class="size-3 animate-pulse rounded-full bg-muted-foreground"></span>
 	{/snippet}
 </div>

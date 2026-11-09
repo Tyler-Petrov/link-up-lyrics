@@ -112,7 +112,7 @@
 			<div
 				class={cn(
 					'rounded-3xl border-l-4 px-4 py-3 transition-[opacity,background-color,border-color] duration-500',
-					isCurrent ? 'border-primary bg-primary/10 opacity-100' : 'border-transparent opacity-35'
+					isCurrent ? 'border-primary bg-card opacity-100' : 'border-transparent opacity-35'
 				)}
 				aria-current={isCurrent ? 'step' : undefined}
 				{@attach (element) => {
@@ -153,7 +153,7 @@
 					out:fade={{ duration: 160 }}
 				>
 					{#if blockName(current)}
-						<p class="text-xs font-semibold tracking-[0.2em] text-primary/80 uppercase">
+						<p class="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
 							{blockName(current)}
 						</p>
 					{/if}

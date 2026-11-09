@@ -7,7 +7,7 @@
 	let { children } = $props();
 </script>
 
-<div class="dark min-h-dvh bg-background text-foreground [color-scheme:dark]">
+<div class="dark stage min-h-dvh bg-background text-foreground [color-scheme:dark]">
 	<svelte:boundary pending={browser ? pending : undefined}>
 		{@render children()}
 
@@ -18,7 +18,7 @@
 
 	{#snippet pending()}
 		<div class="grid min-h-dvh place-items-center">
-			<span class="size-3 animate-pulse rounded-full bg-primary"></span>
+			<span class="size-3 animate-pulse rounded-full bg-muted-foreground"></span>
 		</div>
 	{/snippet}
 </div>

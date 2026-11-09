@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import { browser } from '$app/env';
+	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { setupConvex } from 'convex-svelte';
@@ -9,6 +10,7 @@
 	import { api } from '#convex/_generated/api.js';
 	import { createWatchedWebSocket } from '#lib/connection.svelte.js';
 	import { setConvexQueryCache } from '#lib/convex-query.svelte.js';
+	import { reduced } from '#lib/motion.js';
 	import ConvexClerkSetup from '#lib/components/convex-clerk-setup.svelte';
 	import ConfirmationDialog from '#lib/components/confirmation-dialog.svelte';
 	import { Toaster } from '#lib/components/ui/sonner/index.js';
@@ -39,6 +41,53 @@
 		const color = isStage ? ThemeColors.stage : mode.current && ThemeColors[mode.current];
 		return color ? { light: color, dark: color } : ThemeColors;
 	});
+
+	/*
+	 * Page changes crossfade instead of cutting (the header, named in app.css, holds still). Not for query-only
+	 * changes like ?edit, which stay on the page. The old page is frozen on screen until the new one is ready, so
+	 * a slow page drops the crossfade after a moment and the header's progress bar shows instead.
+	 */
+	onNavigate((navigation) => {
+		if (
+			reduced() ||
+			!document.startViewTransition ||
+			document.visibilityState !== 'visible' ||
+			navigation.from?.url.pathname === navigation.to?.url.pathname
+		)
+			return;
+		return new Promise((resolveNavigation) => {
+			const transition = document.startViewTransition(async () => {
+				resolveNavigation();
+				// A newer navigation may supersede this one; that shouldn't fail the transition.
+				await navigation.complete.catch(() => undefined);
+			});
+			// Browsers reject `ready` when the animation is skipped, though the navigation went fine.
+			transition.ready.catch(() => undefined);
+			const skip = setTimeout(() => transition.skipTransition(), 150);
+			navigation.complete.finally(() => clearTimeout(skip)).catch(() => undefined);
+		});
+	});
+
+	/* Clerk's sign-in, menus and modals in the app's palette, radius and type, following light and dark. */
+	const clerkAppearance = {
+		variables: {
+			colorPrimary: 'var(--primary)',
+			colorPrimaryForeground: 'var(--primary-foreground)',
+			colorBackground: 'var(--card)',
+			colorForeground: 'var(--foreground)',
+			colorMutedForeground: 'var(--muted-foreground)',
+			colorMuted: 'var(--muted)',
+			colorNeutral: 'var(--foreground)',
+			colorInput: 'var(--background)',
+			colorInputForeground: 'var(--foreground)',
+			colorBorder: 'var(--border)',
+			colorRing: 'var(--ring)',
+			colorDanger: 'var(--destructive)',
+			colorSuccess: 'var(--success)',
+			borderRadius: 'var(--radius)',
+			fontFamily: 'inherit'
+		}
+	};
 </script>
 
 <svelte:head>
@@ -49,7 +98,7 @@
 	/>
 </svelte:head>
 
-<ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}>
+<ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY} appearance={clerkAppearance}>
 	<ConvexClerkSetup
 		isAuthenticated={Boolean(data.clerkUserId)}
 		serverToken={data.convexToken}
@@ -62,4 +111,5 @@
 <!-- Dark first: rooms are dim and phones shouldn't glare. -->
 <ModeWatcher defaultMode="dark" {themeColors} />
 <ConfirmationDialog />
-<Toaster position="top-center" />
+<!-- Below the floating header, so a toast never covers the nav. -->
+<Toaster position="top-center" offset={{ top: '4.75rem' }} mobileOffset={{ top: '4.5rem' }} />

@@ -156,6 +156,31 @@
 	text-shadow: 0 0 2rem var(--glow);
 }
 
+/*
+ * Page changes and the theme switch are view transitions; the header (named in app-header) holds still. The old
+ * page fades out a little ahead of the new one fading in, so the two never sit on top of each other for long.
+ */
+::view-transition-group(*) {
+	animation-duration: 200ms;
+	animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+::view-transition-old(root) {
+	animation: 120ms ease-in both view-fade-out;
+}
+::view-transition-new(root) {
+	animation: 200ms cubic-bezier(0.215, 0.61, 0.355, 1) 40ms both view-fade-in;
+}
+@keyframes view-fade-out {
+	to {
+		opacity: 0;
+	}
+}
+@keyframes view-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
 /* Drag to reorder (#lib/sortable): the drop placeholder is a faded dashed outline; the dragged item lifts. */
 .sortable-ghost {
 	opacity: 0.5;
@@ -170,5 +195,26 @@
 @media (prefers-reduced-motion: no-preference) {
 	.sortable-drag {
 		scale: 1.02;
+	}
+}
+
+/* Clerk draws its cards a moment after its script loads: fade them in rather than pop. */
+.cl-rootBox {
+	animation: clerk-in 200ms ease-out;
+}
+@keyframes clerk-in {
+	from {
+		opacity: 0;
+	}
+}
+
+/* Reduced motion: CSS animations and transitions finish at once. Svelte's go through #lib/motion. From Beacon. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 1ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 1ms !important;
 	}
 }

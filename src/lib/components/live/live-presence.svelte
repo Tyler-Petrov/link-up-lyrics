@@ -25,14 +25,21 @@
 	$effect(() => {
 		if (!visible.current) return; // a hidden tab stops beating and expires
 		const id = jamSessionId;
+		let disposed = false;
 		const beat = () =>
 			client
 				.mutation(api.live.heartbeat, { jamSessionId: id, sessionId, interval: HEARTBEAT_INTERVAL })
-				.then((result) => (sessionToken = result.sessionToken))
+				.then((result) => {
+					// A beat that lands after leave() would count this tab again: leave with it instead.
+					if (disposed)
+						void client.mutation(api.live.disconnect, { sessionToken: result.sessionToken });
+					else sessionToken = result.sessionToken;
+				})
 				.catch(() => {}); // a missed beat is harmless; the next one catches up
 		void beat();
 		const timer = setInterval(beat, HEARTBEAT_INTERVAL);
 		return () => {
+			disposed = true;
 			clearInterval(timer);
 			leave();
 		};

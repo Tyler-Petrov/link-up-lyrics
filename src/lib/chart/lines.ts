@@ -100,3 +100,46 @@ export function serializeLine(characters: ChartCharacter[]) {
 		})
 		.join('');
 }
+
+/**
+ * The line after its words were edited to `text`, with chords kept on their characters. `caret` (in
+ * graphemes, after the edit) places the change when the text repeats letters ("aa" → "aaa"). A chord on a
+ * deleted character goes with it, unless the character was typed over: then the first new character keeps it.
+ */
+export function editCharacters(
+	old: ChartCharacter[],
+	text: string,
+	caret: number
+): ChartCharacter[] {
+	const next = graphemes(text);
+	let start = 0;
+	while (start < Math.min(old.length, next.length, caret) && old[start]!.character === next[start])
+		start++;
+	let end = 0;
+	const maxEnd = Math.min(old.length - start, next.length - Math.max(start, caret));
+	while (end < maxEnd && old[old.length - 1 - end]!.character === next[next.length - 1 - end])
+		end++;
+	const removed = old.slice(start, old.length - end);
+	const inserted: ChartCharacter[] = next
+		.slice(start, next.length - end)
+		.map((character) => ({ character }));
+	if (inserted[0] && removed[0]?.chord) inserted[0].chord = removed[0].chord;
+	return [...old.slice(0, start), ...inserted, ...old.slice(old.length - end)];
+}
+
+/** The line with `chord` on character `index` (or removed, when undefined). Past the end pads with spaces. */
+export function setChordAt(
+	characters: ChartCharacter[],
+	index: number,
+	chord: Chord | undefined
+): ChartCharacter[] {
+	const next = characters.map((c) => ({ ...c }));
+	while (next.length <= index) next.push({ character: ' ' });
+	next[index] = chord
+		? { character: next[index]!.character, chord }
+		: { character: next[index]!.character };
+	// A removed trailing chord takes its padding spaces with it.
+	if (!chord)
+		while (next.length > index && next.at(-1)!.character === ' ' && !next.at(-1)!.chord) next.pop();
+	return next;
+}

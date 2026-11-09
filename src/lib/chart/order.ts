@@ -16,3 +16,17 @@ export function ordersAfter(last: number | undefined, count: number) {
 	const start = last === undefined ? 0 : last + 1;
 	return Array.from({ length: count }, (_, i) => start + i);
 }
+
+/** `count` evenly spaced orders between two neighbours (either may be missing), for moving a run of rows. */
+export function ordersBetween(
+	before: number | undefined,
+	after: number | undefined,
+	count: number
+) {
+	if (after === undefined) return ordersAfter(before, count);
+	if (before === undefined) return Array.from({ length: count }, (_, i) => after - count + i);
+	return Array.from(
+		{ length: count },
+		(_, i) => before + ((after - before) * (i + 1)) / (count + 1)
+	);
+}

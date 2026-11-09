@@ -10,6 +10,10 @@
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import SongChart from '#lib/components/chart/song-chart.svelte';
 	import TransposeControl from '#lib/components/chart/transpose-control.svelte';
+	import SongEditor from '#lib/components/editor/song-editor.svelte';
+	import SongDetailsDialog from '#lib/components/editor/song-details-dialog.svelte';
+	import Pencil from '@lucide/svelte/icons/pencil';
+	import Check from '@lucide/svelte/icons/check';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { PageProps } from './$types';
 
@@ -20,6 +24,8 @@
 		await convexQuery(api.song.getArrangement, { songId: params.songId })
 	);
 	let semitones = $state(0);
+	/** The owner's edit mode; everyone else only ever sees the chart. */
+	let editing = $state(false);
 	const spelling = $derived(keySpelling(arrangement?.song.originalKeyTag, semitones));
 
 	async function deleteSong(songId: NonNullable<typeof arrangement>['song']['_id'], title: string) {
@@ -58,11 +64,23 @@
 			<p class="text-lg text-muted-foreground">{song.artist}</p>
 		{/if}
 		<div class="mt-4 flex flex-wrap items-center justify-center gap-3">
-			<TransposeControl bind:semitones keyTag={song.originalKeyTag} />
+			{#if !editing}
+				<TransposeControl bind:semitones keyTag={song.originalKeyTag} />
+			{/if}
 			{#if song.capo}
 				<span class="rounded-xl bg-card px-3 py-2 text-sm">Capo {song.capo}</span>
 			{/if}
 			{#if arrangement.canEdit}
+				<Button
+					variant={editing ? 'default' : 'secondary'}
+					class="rounded-xl"
+					onclick={() => (editing = !editing)}
+				>
+					{#if editing}<Check /> Done{:else}<Pencil /> Edit{/if}
+				</Button>
+				{#if editing}
+					<SongDetailsDialog {song} />
+				{/if}
 				<Button
 					variant="ghost"
 					size="icon"
@@ -76,18 +94,19 @@
 		</div>
 	</header>
 
-	<!--
-		EDITOR MOUNT POINT. The read-only chart below is what everyone sees. When arrangement.canEdit, the editor
-		(M3: chord picker, bracket input, blocks/interludes/loose lines, drag reorder, repeats, line groups)
-		replaces it here, working on the same documents through song-line / song-section mutations.
-	-->
-	<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">
-		{#if arrangement.blocks.length}
-			<SongChart blocks={arrangement.blocks} {semitones} {spelling} />
-		{:else}
-			<p class="text-center text-muted-foreground">This song has no words yet.</p>
-		{/if}
-	</article>
+	{#if editing && arrangement.canEdit}
+		<div class="mt-10">
+			<SongEditor routeSongId={params.songId} {arrangement} />
+		</div>
+	{:else}
+		<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">
+			{#if arrangement.blocks.length}
+				<SongChart blocks={arrangement.blocks} {semitones} {spelling} />
+			{:else}
+				<p class="text-center text-muted-foreground">This song has no words yet.</p>
+			{/if}
+		</article>
+	{/if}
 
 	<footer class="mt-6 flex flex-col items-center gap-1 text-center text-xs text-muted-foreground">
 		<span>{constantByTag('CopyrightSources', song.copyrightSourceTag).name}</span>

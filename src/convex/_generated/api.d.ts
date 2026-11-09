@@ -19,6 +19,7 @@ import type * as model_song from "../model/song.js";
 import type * as model_user from "../model/user.js";
 import type * as seed from "../seed.js";
 import type * as song from "../song.js";
+import type * as song_edit from "../song_edit.js";
 import type * as user from "../user.js";
 import type * as validators from "../validators.js";
 
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   "model/user": typeof model_user;
   seed: typeof seed;
   song: typeof song;
+  song_edit: typeof song_edit;
   user: typeof user;
   validators: typeof validators;
 }>;

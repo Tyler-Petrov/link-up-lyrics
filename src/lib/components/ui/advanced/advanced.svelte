@@ -34,7 +34,7 @@
 	</button>
 
 	{#if open}
-		<div {id} class="grid gap-3 self-stretch pt-3" transition:reveal>
+		<div {id} class="grid gap-3 justify-self-stretch pt-3" transition:reveal>
 			{@render children()}
 		</div>
 	{/if}

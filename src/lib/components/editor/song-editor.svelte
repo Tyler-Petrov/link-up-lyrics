@@ -45,6 +45,14 @@
 
 	const blocks = $derived(arrangement.blocks);
 	const groups = $derived(groupArrangement(blocks));
+	/**
+	 * Each block's identity on screen: a loose run by its place among loose runs, not by its first line, so a
+	 * line moved to or from the top of a run doesn't swap the whole run out.
+	 */
+	const blockKeys = $derived.by(() => {
+		let loose = 0;
+		return blocks.map((block) => (block.type === 'loose' ? `loose:${loose++}` : block.key));
+	});
 
 	const modes: { value: ChordEntryMode; label: string; hint: string }[] = [
 		{ value: 'picker', label: 'Tap chords', hint: 'Tap above a letter to pick a chord' },
@@ -252,7 +260,7 @@
 		class="flex flex-col gap-3"
 		{@attach sortable({ handle: '.block-handle', onUpdate: onReorder })}
 	>
-		{#each blocks as block, blockIndex (block.key)}
+		{#each blocks as block, blockIndex (blockKeys[blockIndex])}
 			<div data-id={block.key} animate:flip={{ duration: 220 }} transition:fade={{ duration: 150 }}>
 				<BlockEditor
 					{block}

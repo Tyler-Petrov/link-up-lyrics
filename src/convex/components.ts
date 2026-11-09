@@ -6,7 +6,16 @@ import { components } from './_generated/api';
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
 	createSong: { kind: 'token bucket', rate: 60, period: HOUR, capacity: 20 },
 	invite: { kind: 'token bucket', rate: 30, period: HOUR, capacity: 10 },
-	liveHeartbeat: { kind: 'token bucket', rate: 30, period: MINUTE, capacity: 10, shards: 4 }
+	/* Per tab. A tab beats every 10s. */
+	liveHeartbeat: { kind: 'token bucket', rate: 30, period: MINUTE, capacity: 10 },
+	/* Per room, so made-up tab ids can't flood one: a full room of 500 beats 3,000 times a minute. */
+	liveRoomHeartbeat: {
+		kind: 'token bucket',
+		rate: 6000,
+		period: MINUTE,
+		capacity: 1000,
+		shards: 10
+	}
 });
 
 /* Who's watching a live session right now: a count, never a roster. §15. */

@@ -155,3 +155,20 @@
 	@apply text-center text-4xl font-[750] tracking-tight sm:text-5xl;
 	text-shadow: 0 0 2rem var(--glow);
 }
+
+/* Drag to reorder (#lib/sortable): the drop placeholder is a faded dashed outline; the dragged item lifts. */
+.sortable-ghost {
+	opacity: 0.5;
+	outline: 2px dashed var(--muted-foreground);
+	outline-offset: -2px;
+	border-radius: var(--radius-2xl);
+}
+.sortable-drag {
+	border-radius: var(--radius-2xl);
+	box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.sortable-drag {
+		scale: 1.02;
+	}
+}

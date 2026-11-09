@@ -1,222 +1,87 @@
-// Drag-to-reorder as an attachment: `{@attach sortable({ onUpdate: ({ newIds }) => … })}` on the list, with a
-// `data-id` on each child. A failed save restores the order and toasts. From Jairus.
-import { on } from 'svelte/events';
-import type { Attachment } from 'svelte/attachments';
+/*
+ * Drag to reorder as an attachment, from Jairus (Beacon's model): `{@attach sortable({ onUpdate })}` on the parent
+ * of a keyed {#each}, with `data-id` on each child. The callback runs with the drop still in the DOM, so it can
+ * read where the item landed; then Sortable's own move is put back. Svelte stays the only thing that moves nodes:
+ * the (optimistic) data change moves the item and animate:glide slides it there. A failed save rolls the data
+ * back, so the list goes back by itself, and a toast says so.
+ */
 import Sortable, {
 	type SortableEvent,
 	type SortableOptions as SortableOptionsBase
 } from 'sortablejs';
-import { tick } from 'svelte';
+import type { Attachment } from 'svelte/attachments';
+import { on } from 'svelte/events';
 import { toast } from 'svelte-sonner';
-
-export function isTouchDevice() {
-	return window.matchMedia('(pointer: coarse)').matches;
-}
+import { reduced } from '#lib/motion.js';
 
 type MaybePromise<T> = T | Promise<T>;
 
-type SortableUpdateEvent = SortableEvent & { newIds: string[] };
+/** A drop, with the `data-id`s of the list it landed in, in their new order. */
+export type SortableUpdateEvent = SortableEvent & { newIds: string[] };
 
-type SortableOptions = Omit<SortableOptionsBase, 'onAdd' | 'onUpdate' | 'filter' | 'store'> & {
-	onAdd?: (event: SortableUpdateEvent) => MaybePromise<void>;
+type SortableOptions = Omit<SortableOptionsBase, 'onAdd' | 'onUpdate'> & {
+	/** A drop within this list. */
 	onUpdate?: (event: SortableUpdateEvent) => MaybePromise<void>;
-	filter?: string;
-	store?: {
-		get?: NonNullable<SortableOptionsBase['store']>['get'];
-		set: NonNullable<SortableOptionsBase['store']>['set'];
-	};
+	/** A drop from another list in the same `group`. Defaults to onUpdate. */
+	onAdd?: (event: SortableUpdateEvent) => MaybePromise<void>;
 };
-
-const childOrderBeforeDrag = new WeakMap<HTMLElement, HTMLElement[]>();
-const sortableInstances = new WeakMap<HTMLElement, Sortable>();
-
-function hasExactChildOrder(element: HTMLElement, expectedOrder: HTMLElement[]) {
-	const currentOrder = Array.from(element.children);
-	return (
-		currentOrder.length === expectedOrder.length &&
-		currentOrder.every((child, index) => child === expectedOrder[index])
-	);
-}
-
-function restoreOrderAfterFailedSave(
-	event: SortableEvent,
-	previousSourceOrder: HTMLElement[] | undefined,
-	sourceOrderAfterDrop: HTMLElement[],
-	targetOrderAfterDrop: HTMLElement[]
-) {
-	if (!previousSourceOrder) return false;
-	if (!hasExactChildOrder(event.from, sourceOrderAfterDrop)) return false;
-	if (!hasExactChildOrder(event.to, targetOrderAfterDrop)) return false;
-
-	if (event.from === event.to) {
-		previousSourceOrder.forEach((child) => event.from.append(child));
-		return true;
-	}
-
-	event.from.append(event.item);
-	previousSourceOrder.forEach((child) => event.from.append(child));
-	return true;
-}
 
 export function sortable(options: SortableOptions = {}): Attachment<HTMLElement> {
 	return (element) => {
-		const abortController = new AbortController();
-		const handleUpdate = (
-			event: SortableEvent,
-			callback: NonNullable<SortableOptions['onAdd']>
-		) => {
-			const previousSourceOrder = childOrderBeforeDrag.get(event.from);
-			childOrderBeforeDrag.delete(event.from);
-			const sourceOrderAfterDrop = Array.from(event.from.children) as HTMLElement[];
-			const targetOrderAfterDrop =
-				event.from === event.to
-					? sourceOrderAfterDrop
-					: (Array.from(event.to.children) as HTMLElement[]);
-			const newIds = Array.from(event.to.children)
-				.map((child) => child.getAttribute('data-id'))
-				.filter((id): id is string => !!id);
+		const onDrop =
+			(callback: NonNullable<SortableOptions['onUpdate']> | undefined) =>
+			(event: SortableEvent) => {
+				if (!callback) return;
+				const newIds = [...event.to.children]
+					.map((child) => child.getAttribute('data-id'))
+					.filter((id): id is string => !!id);
+				const saved = (async () => callback({ ...event, newIds }))();
 
-			const lockedSortables = [...new Set([event.from, event.to])]
-				.map((element) => ({
-					element,
-					instance: sortableInstances.get(element)
-				}))
-				.filter(
-					(
-						sortable
-					): sortable is {
-						element: HTMLElement;
-						instance: Sortable;
-					} => sortable.instance !== undefined
-				)
-				.map((sortable) => ({
-					...sortable,
-					wasDisabled: sortable.instance.option('disabled') as boolean
-				}));
-			lockedSortables.forEach(({ instance }) => instance.option('disabled', true));
+				event.item.remove();
+				event.from.insertBefore(event.item, event.from.children[event.oldIndex!] ?? null);
 
-			void tick().then(async () => {
-				try {
-					await callback({
-						...event,
-						newIds
-					});
-				} catch (error) {
-					const restored = restoreOrderAfterFailedSave(
-						event,
-						previousSourceOrder,
-						sourceOrderAfterDrop,
-						targetOrderAfterDrop
-					);
-					console.error('Failed to save sortable order', error);
-					toast.warning(
-						restored
-							? "Couldn't save the new order. The list was restored."
-							: "Couldn't save the new order. Refresh to restore the saved order."
-					);
-				} finally {
-					lockedSortables.forEach(({ element, instance, wasDisabled }) => {
-						if (sortableInstances.get(element) === instance) {
-							instance.option('disabled', wasDisabled);
-						}
-					});
-				}
-			});
-		};
+				saved.catch((error) => {
+					console.error('Failed to save the new order', error);
+					toast.warning('Couldn’t save the new order, so it went back. Try again.');
+				});
+			};
 
-		const onAdd = options.onAdd ?? options.onUpdate;
-		const onUpdate = options.onUpdate;
-
-		const sortableInstance = new Sortable(element, {
-			animation: 150,
-			fallbackTolerance: 3, // So that we can select items on mobile
+		const instance = new Sortable(element, {
+			animation: reduced() ? 0 : 150,
+			fallbackTolerance: 3, // So a tap still selects on touch screens.
 			delay: 500,
 			delayOnTouchOnly: true,
 			fallbackOnBody: true,
 			swapThreshold: 0.5,
-			forceFallback: isTouchDevice(),
-			...options,
-			store: options.store && {
-				get: options.store.get ?? ((s) => s.toArray()),
-				set: options.store.set
-			},
-			emptyInsertThreshold: options.emptyInsertThreshold ?? 15,
-			onAdd: onAdd && ((event) => handleUpdate(event, onAdd)),
-			onUpdate: onUpdate && ((event) => handleUpdate(event, onUpdate)),
-			onStart: (event) => {
-				childOrderBeforeDrag.set(element, Array.from(element.children) as HTMLElement[]);
-				options.onStart?.(event);
-			},
-			filter: `[data-slot="empty"], .no-sort, ${options.filter ?? ''}`,
+			emptyInsertThreshold: 15,
+			forceFallback: matchMedia('(pointer: coarse)').matches,
 			ghostClass: 'sortable-ghost',
+			chosenClass: 'sortable-chosen',
 			dragClass: 'sortable-drag',
-			chosenClass: 'sortable-chosen'
+			...options,
+			onUpdate: onDrop(options.onUpdate),
+			onAdd: onDrop(options.onAdd ?? options.onUpdate)
 		});
-		sortableInstances.set(element, sortableInstance);
 
-		const previousTouchCallout = element.style.getPropertyValue('-webkit-touch-callout');
-		const previousTouchCalloutPriority = element.style.getPropertyPriority('-webkit-touch-callout');
-		let activePointerType: string | null = null;
-
-		// iPadOS can show its native callout before firing `contextmenu`.
+		// iPadOS can show its native callout before firing `contextmenu`, so turn it off and swallow non-mouse ones.
+		const previousCallout = element.style.getPropertyValue('-webkit-touch-callout');
 		element.style.setProperty('-webkit-touch-callout', 'none');
-		on(
-			element,
-			'pointerdown',
-			(event) => {
-				activePointerType = event.pointerType;
-			},
-			{
-				signal: abortController.signal
-			}
-		);
-		on(
-			window,
-			'pointerup',
-			() => {
-				activePointerType = null;
-			},
-			{
-				signal: abortController.signal
-			}
-		);
-		on(
-			window,
-			'pointercancel',
-			() => {
-				activePointerType = null;
-			},
-			{
-				signal: abortController.signal
-			}
-		);
-		on(
-			element,
-			'contextmenu',
-			(event) => {
-				const pointerType = event instanceof PointerEvent ? event.pointerType : activePointerType;
-				if (pointerType && pointerType !== 'mouse') {
-					event.preventDefault();
-				}
-			},
-			{
-				signal: abortController.signal
-			}
-		);
+		let pointerType: string | null = null;
+		const listeners = [
+			on(element, 'pointerdown', (event) => (pointerType = event.pointerType)),
+			on(window, 'pointerup', () => (pointerType = null)),
+			on(window, 'pointercancel', () => (pointerType = null)),
+			on(element, 'contextmenu', (event) => {
+				const type = event instanceof PointerEvent ? event.pointerType : pointerType;
+				if (type && type !== 'mouse') event.preventDefault();
+			})
+		];
 
 		return () => {
-			abortController.abort();
-			sortableInstances.delete(element);
-			sortableInstance.destroy();
-			if (previousTouchCallout) {
-				element.style.setProperty(
-					'-webkit-touch-callout',
-					previousTouchCallout,
-					previousTouchCalloutPriority
-				);
-			} else {
-				element.style.removeProperty('-webkit-touch-callout');
-			}
+			listeners.forEach((off) => off());
+			instance.destroy();
+			if (previousCallout) element.style.setProperty('-webkit-touch-callout', previousCallout);
+			else element.style.removeProperty('-webkit-touch-callout');
 		};
 	};
 }

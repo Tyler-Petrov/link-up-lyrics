@@ -135,8 +135,8 @@ export class SongEditorState {
 	);
 
 	/**
-	 * Every editor write goes through here, so the save status counts it and a failure is said out loud: Convex
-	 * has already rolled back its optimistic update, so the change is gone from the screen. Resolves to the
+	 * Every editor write goes through here, so the save status counts it and a failure is said out loud (Convex
+	 * has already rolled back its optimistic update, so the change is gone from the screen). Resolves to the
 	 * mutation's result, or undefined when it failed.
 	 */
 	async #save<Mutation extends FunctionReference<'mutation'>>(
@@ -152,7 +152,7 @@ export class SongEditorState {
 		} catch (error) {
 			console.error(error);
 			this.#failed = true;
-			toast.error(errorMessage(error, 'Couldn’t save that change, so it was undone. Try again.'));
+			toast.error(errorMessage(error, 'Couldn’t save your last change. Try again.'));
 			return undefined;
 		} finally {
 			this.#saving--;

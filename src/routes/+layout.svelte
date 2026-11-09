@@ -1,10 +1,13 @@
 <script lang="ts">
 	import '../app.css';
+	import { browser } from '$app/env';
 	import { page } from '$app/state';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { setupConvex } from 'convex-svelte';
 	import { ClerkProvider } from 'svelte-clerk';
 	import { PUBLIC_CLERK_PUBLISHABLE_KEY, PUBLIC_CONVEX_URL } from '$app/env/public';
+	import { api } from '#convex/_generated/api.js';
+	import { createWatchedWebSocket } from '#lib/connection.svelte.js';
 	import { setConvexQueryCache } from '#lib/convex-query.svelte.js';
 	import ConvexClerkSetup from '#lib/components/convex-clerk-setup.svelte';
 	import ConfirmationDialog from '#lib/components/confirmation-dialog.svelte';
@@ -14,7 +17,14 @@
 
 	let { children, data }: LayoutProps = $props();
 
-	setupConvex(PUBLIC_CONVEX_URL);
+	const client = setupConvex(PUBLIC_CONVEX_URL, {
+		// Notices a silently dropped socket (a phone losing signal) in seconds rather than a minute.
+		webSocketConstructor: browser
+			? createWatchedWebSocket(() =>
+					client.query(api.connection.ping, { nonce: Math.random().toString(36) })
+				)
+			: undefined
+	});
 	// Not boilerplate: dedupes convexQuery subscriptions across components (plan §11).
 	setConvexQueryCache(new Map());
 

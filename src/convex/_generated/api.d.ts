@@ -11,6 +11,7 @@
 import type * as billing from "../billing.js";
 import type * as ccli from "../ccli.js";
 import type * as components_ from "../components.js";
+import type * as connection from "../connection.js";
 import type * as constants from "../constants.js";
 import type * as forms_ccli from "../forms/ccli.js";
 import type * as forms_invitation from "../forms/invitation.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   billing: typeof billing;
   ccli: typeof ccli;
   components: typeof components_;
+  connection: typeof connection;
   constants: typeof constants;
   "forms/ccli": typeof forms_ccli;
   "forms/invitation": typeof forms_invitation;

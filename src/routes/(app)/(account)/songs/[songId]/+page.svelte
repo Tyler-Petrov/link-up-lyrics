@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { useConvexClient } from 'convex-svelte';
+	import { IsMounted } from 'runed';
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { api } from '#convex/_generated/api.js';
@@ -32,6 +34,8 @@
 	});
 	/** The owner's edit mode, in the URL (`?edit`) so a reload keeps it; everyone else only sees the chart. */
 	const editing = $derived(!!arrangement?.canEdit && page.url.searchParams.has('edit'));
+	/** The editor only renders in the browser: its chord-entry mode is a per-device setting the server can't see. */
+	const mounted = new IsMounted();
 
 	function toggleEditing() {
 		void goto(editing ? page.url.pathname : `${page.url.pathname}?edit`, {
@@ -108,11 +112,13 @@
 	</header>
 
 	{#if editing}
-		<div class="mt-10">
-			{#key params.songId}
-				<SongEditor routeSongId={params.songId} {arrangement} />
-			{/key}
-		</div>
+		{#if mounted.current}
+			<div class="mt-10" in:fade={{ duration: 150 }}>
+				{#key params.songId}
+					<SongEditor routeSongId={params.songId} {arrangement} />
+				{/key}
+			</div>
+		{/if}
 	{:else}
 		<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">
 			{#if arrangement.blocks.length}

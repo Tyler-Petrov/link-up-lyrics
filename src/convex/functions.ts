@@ -16,6 +16,7 @@ import {
 } from './_generated/server';
 import { currentUser, ensureUser } from './model/user';
 import { touchSong } from './model/song';
+import { recordSongUsage } from './model/jam_session';
 
 const triggers = new Triggers<DataModel>();
 
@@ -106,9 +107,10 @@ triggers.register('SongLine', async (ctx, change) => {
 	await touchSong(ctx, (change.newDoc ?? change.oldDoc).songId);
 });
 
-/* Deleting a session deletes its setlist and members. */
+/* A live session focusing a song records its use for the CCLI report. Deleting a session deletes its */
+/* setlist and members. */
 triggers.register('JamSession', async (ctx, change) => {
-	if (change.operation !== 'delete') return;
+	if (change.newDoc) return await recordSongUsage(ctx, change.oldDoc, change.newDoc);
 	const jamSessionId = change.id;
 	await deleteAll(
 		ctx,

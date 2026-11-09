@@ -4,7 +4,7 @@ import type { MutationCtx, QueryCtx } from '../_generated/server';
 import { loadArrangement } from './song';
 
 /** A setlist is a band's evening, not a library: well under this. */
-const MAX_ITEMS = 200;
+export const MAX_ITEMS = 200;
 
 /** The session's setlist in play order. */
 export async function loadSetlist(ctx: QueryCtx, jamSessionId: Id<'JamSession'>) {

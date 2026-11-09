@@ -1,6 +1,8 @@
 /*
  * Fractional ordering: siblings sort by a number, and a new one goes between its neighbours, so inserting or
- * moving anything writes exactly one row. §4.2.
+ * moving anything writes exactly one row. §4.2. Halving the same gap about 50 times runs out of float
+ * precision; fitsBetween catches that, and the caller renumbers the parent's rows (rare, and a few hundred
+ * rows at most).
  */
 
 /** An order between two neighbours. Either may be missing (start or end of the list). */
@@ -29,4 +31,14 @@ export function ordersBetween(
 		{ length: count },
 		(_, i) => before + ((after - before) * (i + 1)) / (count + 1)
 	);
+}
+
+/** Whether `orders` sort strictly between the neighbours, in sequence. False once a gap is exhausted. */
+export function fitsBetween(
+	before: number | undefined,
+	after: number | undefined,
+	orders: number[]
+) {
+	const all = [before, ...orders, after].filter((order) => order !== undefined);
+	return all.every((order, i) => Number.isFinite(order) && (i === 0 || all[i - 1]! < order));
 }

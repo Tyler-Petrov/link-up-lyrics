@@ -4,9 +4,9 @@
  * only the rows that moved. The song's "last edited" time is bumped by the triggers in functions.ts.
  */
 import { ConvexError, v } from 'convex/values';
-import { orderBetween, ordersBetween } from '#lib/chart/index.js';
+import { fitsBetween, ordersBetween } from '#lib/chart/index.js';
 import type { Doc, Id } from './_generated/dataModel';
-import type { QueryCtx } from './_generated/server';
+import type { MutationCtx, QueryCtx } from './_generated/server';
 import { authMutation } from './functions';
 import { requireSongOwner } from './model/access';
 import { characterValidator, convexTagValidator, discriminatedUnionItem } from './validators';
@@ -90,6 +90,52 @@ async function slotNextTo(
 		: { before: neighbour, after: order };
 }
 
+/**
+ * Orders for `count` new rows in the slot next to `order` (see slotNextTo). When the gap has run out of
+ * precision, the parent's rows are renumbered first.
+ */
+async function ordersNextTo(
+	ctx: MutationCtx,
+	parentRef: ParentRef,
+	order: number | undefined,
+	side: 'before' | 'after' = 'after',
+	count = 1
+) {
+	const slot = await slotNextTo(ctx, parentRef, order, side);
+	const orders = ordersBetween(slot.before, slot.after, count);
+	if (fitsBetween(slot.before, slot.after, orders)) return orders;
+	const renumbered = await renumber(ctx, parentRef);
+	const moved = order === undefined ? undefined : (renumbered.get(order) ?? order);
+	const retry = await slotNextTo(ctx, parentRef, moved, side);
+	return ordersBetween(retry.before, retry.after, count);
+}
+
+/** Rewrites the parent's orders to 0, 1, 2… in their current sequence. Returns old order → new. */
+async function renumber(ctx: MutationCtx, parentRef: ParentRef) {
+	const lines = await ctx.db
+		.query('SongLine')
+		.withIndex('by_parentRef_and_order', (q) => q.eq('parentRef', parentRef))
+		.take(MAX_ROWS);
+	const sections =
+		parentRef.type === 'Song'
+			? await ctx.db
+					.query('SongSection')
+					.withIndex('by_songId_and_order', (q) => q.eq('songId', parentRef._id))
+					.take(MAX_ROWS)
+			: [];
+	const rows = [
+		...lines.map((line) => ({ table: 'SongLine' as const, id: line._id, order: line.order })),
+		...sections.map((s) => ({ table: 'SongSection' as const, id: s._id, order: s.order }))
+	].sort((a, b) => a.order - b.order);
+	const renumbered = new Map<number, number>();
+	for (const [index, row] of rows.entries()) {
+		renumbered.set(row.order, index);
+		if (row.table === 'SongLine') await ctx.db.patch('SongLine', row.id, { order: index });
+		else await ctx.db.patch('SongSection', row.id, { order: index });
+	}
+	return renumbered;
+}
+
 /** Sets a line's characters: its words and the chords on them (typing, the chord picker, bracket edits). */
 export const setCharacters = authMutation({
 	args: { lineId: v.id('SongLine'), characters: charactersValidator },
@@ -111,8 +157,7 @@ export const replaceLine = authMutation({
 		const [first, ...rest] = lines;
 		if (!first || rest.length > MAX_ROWS) throw new ConvexError('INVALID_LINES');
 		await ctx.db.patch('SongLine', lineId, { characters: first });
-		const slot = await slotNextTo(ctx, line.parentRef, line.order);
-		const orders = ordersBetween(slot.before, slot.after, rest.length);
+		const orders = await ordersNextTo(ctx, line.parentRef, line.order, 'after', rest.length);
 		const ids: Id<'SongLine'>[] = [];
 		for (const [index, characters] of rest.entries()) {
 			ids.push(
@@ -138,11 +183,11 @@ export const addLine = authMutation({
 	},
 	handler: async (ctx, { parentRef, afterOrder, characters }) => {
 		const song = await requireParent(ctx, ctx.user, parentRef);
-		const slot = await slotNextTo(ctx, parentRef, afterOrder);
+		const [order] = await ordersNextTo(ctx, parentRef, afterOrder);
 		return await ctx.db.insert('SongLine', {
 			parentRef,
 			songId: song._id,
-			order: orderBetween(slot.before, slot.after),
+			order: order!,
 			kindTag: 'lyric',
 			characters: characters ?? []
 		});
@@ -231,10 +276,7 @@ export const createSection = authMutation({
 		};
 
 		const first = lines[0];
-		if (!first) {
-			const slot = await slotNextTo(ctx, songRef, undefined);
-			return await insert(orderBetween(slot.before, undefined));
-		}
+		if (!first) return await insert((await ordersNextTo(ctx, songRef, undefined))[0]!);
 		const parentRef = first.parentRef;
 		if (lines.some((line) => line.songId !== songId || line.parentRef._id !== parentRef._id))
 			throw new ConvexError('LINES_FROM_DIFFERENT_BLOCKS');
@@ -255,13 +297,12 @@ export const createSection = authMutation({
 		const below = siblings.filter((line) => line.order > lines.at(-1)!.order);
 		if (!isAbove) {
 			// The head of the block: the new block goes just before it.
-			const slot = await slotNextTo(ctx, songRef, source.order, 'before');
-			const sectionId = await insert(orderBetween(slot.before, slot.after));
+			const [order] = await ordersNextTo(ctx, songRef, source.order, 'before');
+			const sectionId = await insert(order!);
 			await moveInto(sectionId, lines);
 			return sectionId;
 		}
-		const slot = await slotNextTo(ctx, songRef, source.order);
-		const [order, continuationOrder] = ordersBetween(slot.before, slot.after, 2);
+		const [order, continuationOrder] = await ordersNextTo(ctx, songRef, source.order, 'after', 2);
 		const sectionId = await insert(order!);
 		await moveInto(sectionId, lines);
 		if (below.length)
@@ -296,12 +337,12 @@ export const repeatSection = authMutation({
 		const section = await requireSection(ctx, ctx.user, sectionId);
 		const source =
 			(section.repeatOfId && (await ctx.db.get('SongSection', section.repeatOfId))) || section;
-		const slot = await slotNextTo(ctx, { type: 'Song', _id: section.songId }, undefined);
+		const [order] = await ordersNextTo(ctx, { type: 'Song', _id: section.songId }, undefined);
 		return await ctx.db.insert('SongSection', {
 			songId: section.songId,
 			name: source.name,
 			kindTag: source.kindTag,
-			order: orderBetween(slot.before, undefined),
+			order: order!,
 			repeatOfId: source._id
 		});
 	}
@@ -321,6 +362,7 @@ export const reorder = authMutation({
 	handler: async (ctx, { songId, items }) => {
 		await requireSongOwner(ctx, songId, ctx.user);
 		if (items.length > MAX_ROWS) throw new ConvexError('TOO_MANY_ITEMS');
+		if (items.some(({ order }) => !Number.isFinite(order))) throw new ConvexError('INVALID_ORDER');
 		for (const { ref, order } of items) {
 			if (ref.type === 'SongSection') {
 				const section = await ctx.db.get('SongSection', ref._id);

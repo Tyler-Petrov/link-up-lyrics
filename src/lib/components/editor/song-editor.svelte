@@ -8,6 +8,8 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import X from '@lucide/svelte/icons/x';
 	import type { SortableEvent } from 'sortablejs';
+	import { ConvexError } from 'convex/values';
+	import { toast } from 'svelte-sonner';
 	import type { Id } from '#convex/_generated/dataModel.js';
 	import type { SongArrangement } from '#convex/model/song.js';
 	import {
@@ -92,6 +94,8 @@
 		return {
 			dragging: selection.dragging,
 			lines: block.lines.slice(from, to + 1),
+			/** Whether a line in the same block comes before the selection. */
+			hasBefore: from > 0,
 			/** The line after the selection in the same block: it starts the next group. */
 			after: block.lines[to + 1]
 		};
@@ -110,10 +114,15 @@
 		editor.selection = null;
 	}
 
+	/**
+	 * Merges the selection into one neighbouring group: the one before it, or at the top of a block the one
+	 * after it. Ungrouping [C D] in [A B][C D][E F] gives [A B C D][E F].
+	 */
 	async function ungroup() {
 		if (!selected) return;
+		const after = !selected.hasBefore && selected.after ? [selected.after] : [];
 		await editor.setGroupMarks(
-			[...selected.lines, ...(selected.after ? [selected.after] : [])]
+			[...selected.lines, ...after]
 				.filter((line) => line.startsGroup)
 				.map((line) => ({ lineId: line._id, startsGroup: false }))
 		);
@@ -122,13 +131,19 @@
 
 	async function makeBlock() {
 		if (!selected) return;
-		const id = await editor.createSection(
-			'New block',
-			'lyrics',
-			selected.lines.map((line) => line._id)
-		);
-		editor.selection = null;
-		editor.renaming = id;
+		try {
+			const id = await editor.createSection(
+				'New block',
+				'lyrics',
+				selected.lines.map((line) => line._id)
+			);
+			editor.selection = null;
+			editor.renaming = id;
+		} catch (error) {
+			toast.error(
+				error instanceof ConvexError ? String(error.data) : 'Couldn’t make the block. Try again.'
+			);
+		}
 	}
 
 	async function addSection(kindTag: 'lyrics' | 'interlude') {

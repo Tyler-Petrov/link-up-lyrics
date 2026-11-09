@@ -249,7 +249,8 @@ const cleanName = (name: string) => name.trim().slice(0, 100) || 'Untitled';
 /**
  * A new block or interlude: empty at the end of the song, or made in place from `lineIds` (consecutive
  * lines of one block, or loose lines). Taken from the middle of a block, the lines below them move to a
- * second new block with the old one's name, so the song still reads in the same order.
+ * second new block with the old one's name, so the song still reads in the same order. Not from a block
+ * that's repeated: that would change every repeat.
  */
 export const createSection = authMutation({
 	args: {
@@ -289,6 +290,15 @@ export const createSection = authMutation({
 		}
 
 		const source = await requireSection(ctx, ctx.user, parentRef._id);
+		// Its repeats render its lines, so taking some out would change every repeat too.
+		const repeat = await ctx.db
+			.query('SongSection')
+			.withIndex('by_repeatOfId', (q) => q.eq('repeatOfId', source._id))
+			.first();
+		if (repeat)
+			throw new ConvexError(
+				`“${source.name}” is repeated later, so making a block from it would change every repeat. Group the lines instead.`
+			);
 		const siblings = await ctx.db
 			.query('SongLine')
 			.withIndex('by_parentRef_and_order', (q) => q.eq('parentRef', parentRef))

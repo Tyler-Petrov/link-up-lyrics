@@ -60,7 +60,10 @@ export const get = authQuery({
 	}
 });
 
-/** "27 watching · 4 in the band": who's connected right now, and who's in the band at all. §15. */
+/**
+ * "27 watching · 4 in the band": who's connected right now, and who's in the band at all. The band is the
+ * owner (never a member row) plus accepted members, so a solo leader sees 1. §15.
+ */
 export const connectedCount = authQuery({
 	args: { jamSessionId: v.id('JamSession') },
 	handler: async (ctx, { jamSessionId }) => {
@@ -72,7 +75,7 @@ export const connectedCount = authQuery({
 				q.eq('jamSessionId', jamSessionId).eq('statusTag', 'accepted')
 			)
 			.take(1000);
-		return { watching: online.length, band: members.length };
+		return { watching: online.length, band: 1 + members.length };
 	}
 });
 

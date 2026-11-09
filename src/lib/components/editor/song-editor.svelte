@@ -22,7 +22,12 @@
 	import { cn } from '#lib/utils.js';
 	import BlockEditor from './block-editor.svelte';
 	import ChordPicker from './chord-picker.svelte';
-	import { SongEditorState, setSongEditor, type ChordEntryMode } from './editor.svelte.js';
+	import {
+		SongEditorState,
+		setSongEditor,
+		type ChordEntryMode,
+		type LineDrop
+	} from './editor.svelte.js';
 
 	/*
 	 * The owner's editor for a song (plan M3): blocks, interludes and loose lines in one draggable order,
@@ -81,6 +86,45 @@
 				}))
 			);
 		}
+	}
+
+	/* ---------- Move a line by its handle: within a block, to another, to or from loose lines ---------- */
+
+	async function moveLine(lineId: Id<'SongLine'>, target: ArrangementBlock, drop: LineDrop) {
+		const from = blocks.find(
+			(b) => !(b.type === 'section' && b.isRepeat) && b.lines.some((l) => l._id === lineId)
+		);
+		if (!from) return;
+		const index = from.lines.findIndex((l) => l._id === lineId);
+		const line = from.lines[index]!;
+		const next = from.lines[index + 1];
+		const above = target.lines.find((l) => l._id === drop.aboveId);
+		const below = target.lines.find((l) => l._id === drop.belowId);
+
+		const marks = new Map<Id<'SongLine'>, boolean>();
+		// The group it leaves carries on without it: the line after it starts the group in its place.
+		if (line.startsGroup && next && !next.startsGroup) marks.set(next._id, true);
+		// Dropped at the top of a group it starts that group; anywhere else it joins the group it's in.
+		marks.set(line._id, drop.atGroupTop);
+		if (drop.atGroupTop && below) marks.set(below._id, false);
+
+		// Loose lines share the song's order space with blocks, so a run's ends border the blocks around it.
+		const at = blocks.findIndex((b) => b.key === target.key);
+		const isLoose = target.type === 'loose';
+		const order = orderBetween(
+			above?.order ?? (isLoose && blocks[at - 1] ? lastOrder(blocks[at - 1]!) : undefined),
+			below?.order ?? (isLoose && blocks[at + 1] ? firstOrder(blocks[at + 1]!) : undefined)
+		);
+		await editor.moveLine(
+			{
+				lineId,
+				parentRef: drop.parentRef,
+				aboveId: drop.aboveId,
+				belowId: drop.belowId,
+				marks: [...marks].map(([id, startsGroup]) => ({ lineId: id, startsGroup }))
+			},
+			order
+		);
 	}
 
 	/* ---------- Line selection → groups and blocks ---------- */
@@ -212,6 +256,7 @@
 			<div data-id={block.key} animate:flip={{ duration: 220 }} transition:fade={{ duration: 150 }}>
 				<BlockEditor
 					{block}
+					onMoveLine={(lineId, drop) => moveLine(lineId, block, drop)}
 					groups={groups.filter((group) => group.blockIndex === blockIndex)}
 					repeatCount={block.type === 'section' && !block.isRepeat
 						? blocks.filter(

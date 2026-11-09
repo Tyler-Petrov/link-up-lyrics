@@ -1,3 +1,8 @@
+<script module lang="ts">
+	/** Where a dragged line was taken from (it may land in another block's list). */
+	let lineDragOrigin: { parent: Node; next: Node | null } | undefined;
+</script>
+
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
@@ -8,11 +13,14 @@
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import CornerUpLeft from '@lucide/svelte/icons/corner-up-left';
 	import AudioLines from '@lucide/svelte/icons/audio-lines';
+	import type { SortableEvent } from 'sortablejs';
+	import type { Id } from '#convex/_generated/dataModel.js';
 	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import ChartLine from '#lib/components/chart/chart-line.svelte';
+	import { sortable } from '#lib/sortable.js';
 	import { cn } from '#lib/utils.js';
-	import { getSongEditor } from './editor.svelte.js';
+	import { getSongEditor, type LineDrop } from './editor.svelte.js';
 	import LineEditor from './line-editor.svelte';
 
 	type Props = {
@@ -21,8 +29,10 @@
 		groups: ChartGroup[];
 		/** How many repeats play this block again (they go when it's deleted). */
 		repeatCount: number;
+		/** A line was dragged by its handle into this block (from it, or from another). */
+		onMoveLine: (lineId: Id<'SongLine'>, drop: LineDrop) => Promise<void>;
 	};
-	let { block, groups, repeatCount }: Props = $props();
+	let { block, groups, repeatCount, onMoveLine }: Props = $props();
 
 	const editor = getSongEditor();
 	const section = $derived(block.type === 'section' ? block.section : undefined);
@@ -84,6 +94,35 @@
 		clearTimeout(pressTimer);
 		pressTimer = undefined;
 		if (selection) selection.dragging = false;
+	}
+
+	/* ---------- Move lines by their handles: every group's list shares one Sortable group ---------- */
+
+	const lineSortable = sortable({
+		group: 'song-lines',
+		handle: '.line-handle',
+		draggable: '[data-line-id]',
+		onStart: ({ item }) => {
+			lineDragOrigin = { parent: item.parentNode!, next: item.nextSibling };
+		},
+		onUpdate: onLineDrop
+	});
+
+	function onLineDrop({ item, to }: SortableEvent) {
+		const rows = [...to.closest('section')!.querySelectorAll<HTMLElement>('[data-line-id]')];
+		const at = rows.indexOf(item);
+		const idOf = (row: HTMLElement | undefined) =>
+			row?.dataset.lineId as Id<'SongLine'> | undefined;
+		const drop: LineDrop = {
+			parentRef,
+			aboveId: idOf(rows[at - 1]),
+			belowId: idOf(rows[at + 1]),
+			atGroupTop: to.querySelector('[data-line-id]') === item
+		};
+		// Svelte owns the rows: put this one back, and the (optimistic) data moves it.
+		lineDragOrigin?.parent.insertBefore(item, lineDragOrigin.next);
+		lineDragOrigin = undefined;
+		return onMoveLine(idOf(item)!, drop);
 	}
 
 	/* ---------- Block actions ---------- */
@@ -213,6 +252,7 @@
 			<div
 				class={cn('relative rounded-2xl', tinted ? 'bg-primary/[0.07]' : 'bg-transparent')}
 				animate:flip={{ duration: 200 }}
+				{@attach !isRepeat && lineSortable}
 			>
 				<span
 					class={cn(
@@ -246,6 +286,7 @@
 						)}
 						data-select-line={index}
 						data-block-key={block.key}
+						data-line-id={isRepeat ? undefined : line._id}
 						transition:slide={{ duration: 160 }}
 					>
 						<!-- The rail: drag along it to select lines (long-press first on touch). -->
@@ -266,6 +307,14 @@
 							<ChartLine characters={line.characters} class="py-1 opacity-80" />
 						{:else}
 							<LineEditor {line} previous={block.lines[index - 1]} chordsOnly={isInterlude} />
+							<button
+								type="button"
+								class="line-handle mb-0.5 shrink-0 cursor-grab touch-none self-end rounded-lg p-1.5 text-muted-foreground/60 hover:bg-accent hover:text-foreground active:cursor-grabbing"
+								aria-label="Drag to move this line"
+								title="Drag to move this line"
+							>
+								<GripVertical class="size-4" />
+							</button>
 						{/if}
 					</div>
 				{/each}

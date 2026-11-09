@@ -3,7 +3,7 @@
  * fractional order space, and a section's lines have their own (§4.2), so inserting or moving anything writes
  * only the rows that moved. The song's "last edited" time is bumped by the triggers in functions.ts.
  */
-import { ConvexError, v } from 'convex/values';
+import { ConvexError, v, type Infer } from 'convex/values';
 import { fitsBetween, ordersBetween } from '#lib/chart/index.js';
 import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
@@ -228,18 +228,64 @@ export const removeLine = authMutation({
 	}
 });
 
+const groupMarksValidator = v.array(
+	v.object({ lineId: v.id('SongLine'), startsGroup: v.boolean() })
+);
+
+async function writeGroupMarks(
+	ctx: MutationCtx,
+	user: Doc<'User'>,
+	marks: Infer<typeof groupMarksValidator>
+) {
+	if (marks.length > MAX_ROWS) throw new ConvexError('TOO_MANY_LINES');
+	for (const { lineId, startsGroup } of marks) {
+		await requireLine(ctx, user, lineId);
+		await ctx.db.patch('SongLine', lineId, { startsGroup: startsGroup || undefined });
+	}
+}
+
 /**
  * Sets or clears where line groups start (#lib/chart groupArrangement derives the groups). The editor sends
  * the marks for a selected range: its first line and the line after it start groups.
  */
 export const setGroupMarks = authMutation({
-	args: { marks: v.array(v.object({ lineId: v.id('SongLine'), startsGroup: v.boolean() })) },
+	args: { marks: groupMarksValidator },
 	handler: async (ctx, { marks }) => {
-		if (marks.length > MAX_ROWS) throw new ConvexError('TOO_MANY_LINES');
-		for (const { lineId, startsGroup } of marks) {
-			await requireLine(ctx, ctx.user, lineId);
-			await ctx.db.patch('SongLine', lineId, { startsGroup: startsGroup || undefined });
-		}
+		await writeGroupMarks(ctx, ctx.user, marks);
+		return null;
+	}
+});
+
+/**
+ * Moves a line within its song (its drag handle): within a block, to another block, or to or from a run of
+ * loose lines. It lands just after `aboveId`, or just before `belowId` at the top of a block, or alone in an
+ * empty block. Never into a repeat, which has no lines of its own. `marks` are the group marks that keep the
+ * groups as they look after the drop (the editor works them out, as it does for setGroupMarks).
+ */
+export const moveLine = authMutation({
+	args: {
+		lineId: v.id('SongLine'),
+		parentRef: parentRefValidator,
+		aboveId: v.optional(v.id('SongLine')),
+		belowId: v.optional(v.id('SongLine')),
+		marks: groupMarksValidator
+	},
+	handler: async (ctx, { lineId, parentRef, aboveId, belowId, marks }) => {
+		const line = await requireLine(ctx, ctx.user, lineId);
+		const song = await requireParent(ctx, ctx.user, parentRef);
+		if (song._id !== line.songId) throw new ConvexError('NOT_FOUND');
+		const neighbourId = aboveId ?? belowId;
+		const neighbour = neighbourId && (await requireLine(ctx, ctx.user, neighbourId));
+		if (neighbour && (neighbour._id === lineId || neighbour.parentRef._id !== parentRef._id))
+			throw new ConvexError('NOT_FOUND');
+		const [order] = await ordersNextTo(
+			ctx,
+			parentRef,
+			neighbour?.order,
+			aboveId ? 'after' : 'before'
+		);
+		await ctx.db.patch('SongLine', lineId, { parentRef, order: order! });
+		await writeGroupMarks(ctx, ctx.user, marks);
 		return null;
 	}
 });

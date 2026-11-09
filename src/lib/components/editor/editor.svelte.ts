@@ -6,6 +6,7 @@
 import { createContext, tick } from 'svelte';
 import { useConvexClient } from 'convex-svelte';
 import type { OptimisticLocalStore } from 'convex/browser';
+import type { FunctionArgs } from 'convex/server';
 import { PersistedState } from 'runed';
 import { api } from '#convex/_generated/api.js';
 import type { Doc, Id } from '#convex/_generated/dataModel.js';
@@ -32,6 +33,43 @@ export type PickerTarget = {
 };
 
 type Line = Doc<'SongLine'>;
+type Section = Doc<'SongSection'>;
+
+/** Where a dragged line was dropped: next to which lines, and whether at the top of a group. */
+export type LineDrop = {
+	parentRef: Line['parentRef'];
+	aboveId?: Id<'SongLine'>;
+	belowId?: Id<'SongLine'>;
+	atGroupTop: boolean;
+};
+
+/**
+ * The arrangement rebuilt from its rows after patching some (a new order, a new parent), so they land where
+ * the server will put them while it saves.
+ */
+function rebuild(
+	blocks: ArrangementBlock[],
+	patchSection: (section: Section) => Section,
+	patchLine: (line: Line) => Line
+) {
+	const sections = blocks.flatMap((b) => (b.type === 'section' ? [patchSection(b.section)] : []));
+	const lines = blocks
+		.flatMap((b) => (b.type === 'section' && b.isRepeat ? [] : b.lines))
+		.map(patchLine)
+		.sort((a, b) => a.order - b.order);
+	const linesBySection = new Map<Id<'SongSection'>, Line[]>();
+	for (const line of lines)
+		if (line.parentRef.type === 'SongSection')
+			linesBySection.set(line.parentRef._id, [
+				...(linesBySection.get(line.parentRef._id) ?? []),
+				line
+			]);
+	return buildArrangement(
+		sections,
+		lines.filter((line) => line.parentRef.type === 'Song'),
+		linesBySection
+	);
+}
 
 export class SongEditorState {
 	#client = useConvexClient();
@@ -141,6 +179,30 @@ export class SongEditorState {
 		);
 	}
 
+	/**
+	 * Moves a line, showing it at `order` (between its neighbours) while the server places it for real.
+	 * `marks` keep the line groups as they look after the drop.
+	 */
+	moveLine(args: FunctionArgs<typeof api.song_edit.moveLine>, order: number) {
+		const marks = new Map(args.marks.map((mark) => [mark.lineId as string, mark.startsGroup]));
+		return this.#client.mutation(api.song_edit.moveLine, args, {
+			optimisticUpdate: (store) =>
+				this.#patchBlocks(store, (blocks) =>
+					rebuild(
+						blocks,
+						(section) => section,
+						(line) => {
+							const moved =
+								line._id === args.lineId ? { ...line, parentRef: args.parentRef, order } : line;
+							return marks.has(line._id)
+								? { ...moved, startsGroup: marks.get(line._id) || undefined }
+								: moved;
+						}
+					)
+				)
+		});
+	}
+
 	setGroupMarks(marks: { lineId: Id<'SongLine'>; startsGroup: boolean }[]) {
 		const byId = new Map(marks.map((mark) => [mark.lineId as string, mark.startsGroup]));
 		return this.#client.mutation(
@@ -236,23 +298,11 @@ export class SongEditorState {
 			api.song_edit.reorder,
 			{ songId: this.songId, items },
 			{
-				optimisticUpdate: (store) =>
-					this.#patchBlocks(store, (blocks) => {
-						const reorder = <T extends { _id: string; order: number }>(row: T) =>
-							orders.has(row._id) ? { ...row, order: orders.get(row._id)! } : row;
-						const sections = blocks.flatMap((b) =>
-							b.type === 'section' ? [reorder(b.section)] : []
-						);
-						const looseLines = blocks.flatMap((b) =>
-							b.type === 'loose' ? b.lines.map(reorder) : []
-						);
-						const linesBySection = new Map(
-							blocks.flatMap((b) =>
-								b.type === 'section' && !b.isRepeat ? [[b.section._id, b.lines] as const] : []
-							)
-						);
-						return buildArrangement(sections, looseLines, linesBySection);
-					})
+				optimisticUpdate: (store) => {
+					const reorder = <T extends { _id: string; order: number }>(row: T) =>
+						orders.has(row._id) ? { ...row, order: orders.get(row._id)! } : row;
+					this.#patchBlocks(store, (blocks) => rebuild(blocks, reorder, reorder));
+				}
 			}
 		);
 	}

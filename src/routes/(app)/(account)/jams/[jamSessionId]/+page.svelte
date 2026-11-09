@@ -83,16 +83,16 @@
 			class="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-card px-4 py-3 shadow-sm shadow-black/10"
 		>
 			{#if session.isLive}
-				<span class="flex items-center gap-2 font-semibold text-primary" in:fade>
+				<span class="flex items-center gap-2 font-semibold text-live" in:fade>
 					<span class="relative flex size-2.5">
-						<span class="absolute inset-0 animate-ping rounded-full bg-primary/70"></span>
-						<span class="size-2.5 rounded-full bg-primary"></span>
+						<span class="absolute inset-0 animate-ping rounded-full bg-live/70"></span>
+						<span class="size-2.5 rounded-full bg-live"></span>
 					</span>
 					Live
 				</span>
 			{:else}
 				<span class="flex items-center gap-2 font-semibold text-muted-foreground" in:fade>
-					<span class="size-2.5 rounded-full bg-muted-foreground/40"></span>
+					<span class="size-2.5 rounded-full border-2 border-muted-foreground"></span>
 					Not live
 				</span>
 			{/if}

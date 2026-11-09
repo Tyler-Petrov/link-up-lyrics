@@ -34,9 +34,9 @@
 					<div class="flex items-center gap-2 text-xs">
 						{#if session.isLive}
 							<span
-								class="flex items-center gap-1.5 rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary"
+								class="flex items-center gap-1.5 rounded-full bg-live/15 px-2 py-0.5 font-semibold text-live"
 							>
-								<span class="size-1.5 animate-pulse rounded-full bg-primary"></span> Live
+								<span class="size-1.5 animate-pulse rounded-full bg-live"></span> Live
 							</span>
 						{/if}
 						<span class="rounded-full bg-background/50 px-2 py-0.5 text-muted-foreground">

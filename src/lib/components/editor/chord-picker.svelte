@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { slide } from 'svelte/transition';
 	import X from '@lucide/svelte/icons/x';
 	import {
 		Accidentals,
@@ -11,7 +10,9 @@
 	} from '#convex/constants.js';
 	import type { Chord } from '#convex/validators.js';
 	import { formatChord } from '#lib/chart/index.js';
+	import { reveal } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
+	import { Advanced } from '#lib/components/ui/advanced/index.js';
 	import { getSongEditor } from './editor.svelte.js';
 
 	/*
@@ -30,6 +31,22 @@
 	/** The slash chord's bass note; none for most chords. */
 	let bassRootTag = $state<ConstantTag<'ChordRoots'>>();
 	let bassAccidentalTag = $state<ConstantTag<'Accidentals'>>('natural');
+
+	/** What most charts use. The rest, and slash basses, wait under "More chords". */
+	const common: ConstantTag<'ChordQualities'>[] = [
+		'major',
+		'minor',
+		'dominant7',
+		'major7',
+		'minor7',
+		'sus2',
+		'sus4',
+		'add9'
+	];
+	const commonQualities = ChordQualities.filter((q) => common.includes(q.tag));
+	const moreQualities = ChordQualities.filter((q) => !common.includes(q.tag));
+	/** Opens with the picker when the chord already uses something from it. */
+	let more = $state(false);
 
 	const existing = $derived(target?.characters[target.index]?.chord);
 	const isNoChord = $derived(qualityTag === 'noChord');
@@ -69,6 +86,7 @@
 			bassRootTag = chord.bassRootTag;
 			bassAccidentalTag = chord.bassAccidentalTag ?? 'natural';
 		} else bassRootTag = undefined;
+		more = untrack(() => !common.includes(qualityTag) || !!bassRootTag);
 		if (!element.open) element.showModal();
 	}
 
@@ -165,12 +183,9 @@
 			</div>
 		</fieldset>
 
-		<fieldset class="flex flex-col gap-2">
-			<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-				Quality
-			</legend>
+		{#snippet qualities(options: (typeof ChordQualities)[number][])}
 			<div class="grid grid-cols-4 gap-1.5">
-				{#each ChordQualities as option (option.tag)}
+				{#each options as option (option.tag)}
 					<button
 						type="button"
 						class={cn(
@@ -188,64 +203,76 @@
 					</button>
 				{/each}
 			</div>
+		{/snippet}
+
+		<fieldset class="flex flex-col gap-2">
+			<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+				Quality
+			</legend>
+			{@render qualities(commonQualities)}
 		</fieldset>
 
-		<fieldset class="flex flex-col disabled:opacity-40" disabled={isNoChord}>
-			<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-				Bass note <span class="font-normal normal-case">(optional, for a slash chord like G/B)</span
-				>
-			</legend>
-			<div class="grid grid-cols-8 gap-1.5">
-				<button
-					type="button"
-					class={cn(
-						'h-10 rounded-xl text-xs font-semibold transition-colors',
-						!bassRootTag
-							? 'bg-primary text-primary-foreground'
-							: 'bg-secondary enabled:hover:bg-accent'
-					)}
-					aria-pressed={!bassRootTag}
-					onclick={() => pickBass(undefined)}>None</button
-				>
-				{#each ChordRoots as option (option.tag)}
+		<Advanced label="More chords and bass notes" bind:open={more} class="-mt-2">
+			{@render qualities(moreQualities)}
+
+			<fieldset class="flex flex-col pt-2 disabled:opacity-40" disabled={isNoChord}>
+				<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+					Bass note <span class="font-normal normal-case"
+						>(optional, for a slash chord like G/B)</span
+					>
+				</legend>
+				<div class="grid grid-cols-8 gap-1.5">
 					<button
 						type="button"
 						class={cn(
-							'h-10 rounded-xl text-base font-bold transition-colors',
-							option.tag === bassRootTag
+							'h-10 rounded-xl text-xs font-semibold transition-colors',
+							!bassRootTag
 								? 'bg-primary text-primary-foreground'
 								: 'bg-secondary enabled:hover:bg-accent'
 						)}
-						aria-pressed={option.tag === bassRootTag}
-						aria-label="Bass {option.name}"
-						onclick={() => pickBass(option.tag)}>{option.name}</button
+						aria-pressed={!bassRootTag}
+						onclick={() => pickBass(undefined)}>None</button
 					>
-				{/each}
-			</div>
-			{#if bassRootTag}
-				{@const bassRoot = bassRootTag}
-				<!-- Its gap is padding, so it slides open and shut with the row. -->
-				<div class="grid grid-cols-3 gap-1.5 pt-2" transition:slide={{ duration: 160 }}>
-					{#each Accidentals as option (option.tag)}
+					{#each ChordRoots as option (option.tag)}
 						<button
 							type="button"
-							disabled={!allows(bassRoot, option.tag)}
 							class={cn(
-								'h-9 rounded-xl text-sm font-semibold transition-colors disabled:opacity-25',
-								option.tag === bassAccidentalTag
+								'h-10 rounded-xl text-base font-bold transition-colors',
+								option.tag === bassRootTag
 									? 'bg-primary text-primary-foreground'
 									: 'bg-secondary enabled:hover:bg-accent'
 							)}
-							aria-pressed={option.tag === bassAccidentalTag}
+							aria-pressed={option.tag === bassRootTag}
 							aria-label="Bass {option.name}"
-							onclick={() => (bassAccidentalTag = option.tag)}
+							onclick={() => pickBass(option.tag)}>{option.name}</button
 						>
-							{option.symbol || '♮'}
-						</button>
 					{/each}
 				</div>
-			{/if}
-		</fieldset>
+				{#if bassRootTag}
+					{@const bassRoot = bassRootTag}
+					<!-- Its gap is padding, so it slides open and shut with the row. -->
+					<div class="grid grid-cols-3 gap-1.5 pt-2" transition:reveal>
+						{#each Accidentals as option (option.tag)}
+							<button
+								type="button"
+								disabled={!allows(bassRoot, option.tag)}
+								class={cn(
+									'h-9 rounded-xl text-sm font-semibold transition-colors disabled:opacity-25',
+									option.tag === bassAccidentalTag
+										? 'bg-primary text-primary-foreground'
+										: 'bg-secondary enabled:hover:bg-accent'
+								)}
+								aria-pressed={option.tag === bassAccidentalTag}
+								aria-label="Bass {option.name}"
+								onclick={() => (bassAccidentalTag = option.tag)}
+							>
+								{option.symbol || '♮'}
+							</button>
+						{/each}
+					</div>
+				{/if}
+			</fieldset>
+		</Advanced>
 
 		<footer class="flex gap-2">
 			{#if existing}

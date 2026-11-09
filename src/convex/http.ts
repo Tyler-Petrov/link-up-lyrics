@@ -41,6 +41,7 @@ function parseSubscriptionItemEvent(event: unknown) {
 	if (typeof clerkUserId !== 'string' || typeof planSlug !== 'string') return undefined;
 	return {
 		type: event.type,
+		status: typeof data.status === 'string' ? data.status : undefined,
 		eventEpoch,
 		clerkUserId,
 		planSlug,

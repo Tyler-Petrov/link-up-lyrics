@@ -27,7 +27,8 @@ export function effectivePlanTag(user: BillingFields, now: number) {
 /** When their free trial ends, if it ends within TRIAL_WARNING_DAYS and nothing else covers them. */
 export function trialEndingSoonEpoch(user: BillingFields, now: number) {
 	if (effectivePlanTag(user, now) !== 'trialing' || !user.trialEndsEpoch) return undefined;
-	return user.trialEndsEpoch - now <= TRIAL_WARNING_DAYS * DAY ? user.trialEndsEpoch : undefined;
+	const left = user.trialEndsEpoch - now;
+	return left > 0 && left <= TRIAL_WARNING_DAYS * DAY ? user.trialEndsEpoch : undefined;
 }
 
 /** Whether this person's sessions can be created, taken live and invited to. */

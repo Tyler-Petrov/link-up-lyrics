@@ -25,10 +25,11 @@
 {:else}
 	<div class="flex flex-col items-center gap-6">
 		<h1 class="page-title">Sign in to continue</h1>
-		<!-- A card-sized placeholder until Clerk draws the card over it (fading in, app.css), so nothing jumps. -->
+		<!-- A card-sized placeholder until Clerk draws the card into its host div (fading in, app.css), so
+		     nothing jumps. -->
 		<div class="group grid w-full max-w-[25rem] justify-items-center *:[grid-area:1/1]">
 			<Skeleton
-				class="h-56 w-full rounded-3xl transition-opacity duration-300 group-has-[.cl-rootBox]:animate-none group-has-[.cl-rootBox]:opacity-0"
+				class="h-56 w-full rounded-3xl transition-[visibility] delay-200 group-has-[>div>*]:invisible"
 			/>
 			<SignIn routing="hash" appearance={signInAppearance} />
 		</div>

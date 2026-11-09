@@ -37,11 +37,19 @@ type Section = Doc<'SongSection'>;
 
 /** Where a dragged line was dropped: next to which lines, and whether at the top of a group. */
 export type LineDrop = {
-	parentRef: Line['parentRef'];
 	aboveId?: Id<'SongLine'>;
 	belowId?: Id<'SongLine'>;
 	atGroupTop: boolean;
 };
+
+type GroupMark = { lineId: Id<'SongLine'>; startsGroup: boolean };
+
+/** Sets the marked lines' `startsGroup` (left off when false, as the server stores it). */
+function withMarks(marks: GroupMark[]) {
+	const byId = new Map(marks.map((mark) => [mark.lineId as string, mark.startsGroup]));
+	return (line: Line): Line =>
+		byId.has(line._id) ? { ...line, startsGroup: byId.get(line._id) || undefined } : line;
+}
 
 /**
  * The arrangement rebuilt from its rows after patching some (a new order, a new parent), so they land where
@@ -184,37 +192,33 @@ export class SongEditorState {
 	 * `marks` keep the line groups as they look after the drop.
 	 */
 	moveLine(args: FunctionArgs<typeof api.song_edit.moveLine>, order: number) {
-		const marks = new Map(args.marks.map((mark) => [mark.lineId as string, mark.startsGroup]));
+		const mark = withMarks(args.marks);
 		return this.#client.mutation(api.song_edit.moveLine, args, {
 			optimisticUpdate: (store) =>
 				this.#patchBlocks(store, (blocks) =>
 					rebuild(
 						blocks,
 						(section) => section,
-						(line) => {
-							const moved =
-								line._id === args.lineId ? { ...line, parentRef: args.parentRef, order } : line;
-							return marks.has(line._id)
-								? { ...moved, startsGroup: marks.get(line._id) || undefined }
-								: moved;
-						}
+						(line) =>
+							mark(line._id === args.lineId ? { ...line, parentRef: args.parentRef, order } : line)
 					)
 				)
 		});
 	}
 
-	setGroupMarks(marks: { lineId: Id<'SongLine'>; startsGroup: boolean }[]) {
-		const byId = new Map(marks.map((mark) => [mark.lineId as string, mark.startsGroup]));
+	setGroupMarks(marks: GroupMark[]) {
 		return this.#client.mutation(
 			api.song_edit.setGroupMarks,
 			{ marks },
-			{
-				optimisticUpdate: (store) =>
-					this.#patchLines(store, (line) =>
-						byId.has(line._id) ? { ...line, startsGroup: byId.get(line._id) || undefined } : line
-					)
-			}
+			{ optimisticUpdate: (store) => this.#patchLines(store, withMarks(marks)) }
 		);
+	}
+
+	/** Where a block's lines live: its section, or the song itself for loose lines. */
+	parentRefOf(block: ArrangementBlock): Line['parentRef'] {
+		return block.type === 'section'
+			? { type: 'SongSection', _id: block.section._id }
+			: { type: 'Song', _id: this.songId };
 	}
 
 	/** True while Enter, Backspace or a paste is saving and focus hasn't moved yet: lines hold typing. */

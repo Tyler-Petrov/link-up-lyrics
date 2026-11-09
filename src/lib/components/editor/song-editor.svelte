@@ -126,7 +126,7 @@
 		await editor.moveLine(
 			{
 				lineId,
-				parentRef: drop.parentRef,
+				parentRef: editor.parentRefOf(target),
 				aboveId: drop.aboveId,
 				belowId: drop.belowId,
 				marks: [...marks].map(([id, startsGroup]) => ({ lineId: id, startsGroup }))

@@ -34,11 +34,6 @@
 	const isRepeat = $derived(block.type === 'section' && block.isRepeat);
 	const isInterlude = $derived(block.type === 'section' && block.source.kindTag === 'interlude');
 	const lineIndex = $derived(new Map(block.lines.map((line, index) => [line._id, index])));
-	const parentRef = $derived(
-		block.type === 'section'
-			? { type: 'SongSection' as const, _id: block.section._id }
-			: { type: 'Song' as const, _id: editor.songId }
-	);
 
 	const selection = $derived(editor.selection?.blockKey === block.key ? editor.selection : null);
 	const isSelected = (index: number) =>
@@ -106,7 +101,6 @@
 		const idOf = (row: HTMLElement | undefined) =>
 			row?.dataset.lineId as Id<'SongLine'> | undefined;
 		const drop: LineDrop = {
-			parentRef,
 			aboveId: idOf(rows[at - 1]),
 			belowId: idOf(rows[at + 1]),
 			atGroupTop: to.querySelector('[data-line-id]') === item
@@ -147,7 +141,7 @@
 	}
 
 	async function addLine() {
-		const id = await editor.addLine(parentRef, block.lines.at(-1)?.order);
+		const id = await editor.addLine(editor.parentRefOf(block), block.lines.at(-1)?.order);
 		await editor.focusLine(id, 0);
 	}
 </script>

@@ -1,15 +1,19 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { settled } from 'svelte';
 	import { useConvexClient } from 'convex-svelte';
 	import { ConvexError } from 'convex/values';
 	import { toast } from 'svelte-sonner';
-	import { fade } from 'svelte/transition';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Copy from '@lucide/svelte/icons/copy';
-	import Maximize from '@lucide/svelte/icons/maximize-2';
+	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
+	import Presentation from '@lucide/svelte/icons/presentation';
 	import Radio from '@lucide/svelte/icons/radio';
 	import { api } from '#convex/_generated/api.js';
+	import { confirmation } from '#lib/confirmation.svelte.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { errorMessage } from '#lib/errors.js';
+	import { appear, reveal } from '#lib/motion.js';
 	import AddSongDialog from '#lib/components/jam/add-song-dialog.svelte';
 	import ConnectedCount from '#lib/components/jam/connected-count.svelte';
 	import FocusStage from '#lib/components/jam/focus-stage.svelte';
@@ -29,18 +33,34 @@
 	);
 	const liveUrl = $derived(`${page.url.origin}/live/${params.jamSessionId}`);
 
+	/** While Go live / End live is on its way, so the button says so and can't be pressed twice. */
+	let settingLive = $state(false);
+
 	async function setLive(isLive: boolean) {
+		if (
+			!isLive &&
+			!(await confirmation({
+				title: 'End live for everyone?',
+				message: 'Phones following along will show that the session ended.',
+				confirmLabel: 'End live'
+			}))
+		)
+			return;
+		settingLive = true;
 		try {
 			await client.mutation(api.jam_session.setLive, {
 				jamSessionId: console_!.session._id,
 				isLive
 			});
+			await settled(); // until the console shows the new state, so the button never flips back for a frame
 		} catch (error) {
 			toast.error(
 				error instanceof ConvexError && error.data === 'SUBSCRIPTION_REQUIRED'
 					? 'Going live needs a subscription. See your account page.'
-					: 'Couldn’t change the session. Try again.'
+					: errorMessage(error, 'Couldn’t change the session. Try again.')
 			);
+		} finally {
+			settingLive = false;
 		}
 	}
 
@@ -69,54 +89,68 @@
 		<ArrowLeft class="size-4" /> Jams
 	</a>
 
-	<header class="mt-3 flex flex-col gap-4">
-		<div class="flex items-start gap-2">
-			<h1
-				class="min-w-0 flex-1 text-3xl font-[750] tracking-tight [text-shadow:0_0_2rem_var(--glow)] sm:text-4xl"
-			>
-				{session.name}
-			</h1>
-			{#if roleTag === 'owner'}<SessionSettings {session} />{/if}
-		</div>
-
-		<div
-			class="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl bg-card px-4 py-3 shadow-sm shadow-black/10"
+	<header class="mt-3 flex items-start gap-2">
+		<h1
+			class="min-w-0 flex-1 text-3xl font-[750] tracking-tight [text-shadow:0_0_2rem_var(--glow)] sm:text-4xl"
 		>
-			{#if session.isLive}
-				<span class="flex items-center gap-2 font-semibold text-live" in:fade>
-					<span class="relative flex size-2.5">
-						<span class="absolute inset-0 animate-ping rounded-full bg-live/70"></span>
-						<span class="size-2.5 rounded-full bg-live"></span>
-					</span>
-					Live
-				</span>
-			{:else}
-				<span class="flex items-center gap-2 font-semibold text-muted-foreground" in:fade>
-					<span class="size-2.5 rounded-full border-2 border-muted-foreground"></span>
-					Not live
-				</span>
-			{/if}
-			<div class="flex-1">
-				<ConnectedCount jamSessionId={session._id} />
-			</div>
-			<Button
-				variant={session.isLive ? 'secondary' : 'default'}
-				class="w-28 rounded-xl"
-				onclick={() => setLive(!session.isLive)}
-			>
-				{#if session.isLive}End{:else}<Radio /> Go live{/if}
-			</Button>
-			{#if roleTag === 'owner' && !session.isLive}
-				<HostingStatus class="basis-full" />
-			{/if}
-		</div>
+			{session.name}
+		</h1>
+		{#if roleTag === 'owner'}<SessionSettings {session} />{/if}
 	</header>
+
+	<!-- Stays in view under the app header while the leader steps through a song: are we live, and who's here. -->
+	<div
+		class="sticky top-[4.5rem] z-20 mt-4 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-md shadow-black/15 sm:gap-5"
+	>
+		{#if session.isLive}
+			<span class="flex min-w-[4.75rem] items-center gap-2 font-semibold text-live" in:appear>
+				<span class="relative flex size-2.5">
+					<span class="absolute inset-0 rounded-full bg-live/70 motion-safe:animate-ping"></span>
+					<span class="size-2.5 rounded-full bg-live"></span>
+				</span>
+				Live
+			</span>
+		{:else}
+			<span
+				class="flex min-w-[4.75rem] items-center gap-2 font-semibold text-muted-foreground"
+				in:appear
+			>
+				<span class="size-2.5 rounded-full border-2 border-muted-foreground"></span>
+				Not live
+			</span>
+		{/if}
+		<ConnectedCount jamSessionId={session._id} isLive={session.isLive} class="min-w-0 flex-1" />
+		<Button
+			variant={session.isLive ? 'secondary' : 'default'}
+			class="w-[7.5rem] rounded-xl"
+			disabled={settingLive}
+			onclick={() => setLive(!session.isLive)}
+		>
+			{#if settingLive}
+				<LoaderCircle class="motion-safe:animate-spin" />
+				{session.isLive ? 'Ending…' : 'Going live…'}
+			{:else if session.isLive}
+				End live
+			{:else}
+				<Radio /> Go live
+			{/if}
+		</Button>
+	</div>
+	{#if roleTag === 'owner' && !session.isLive}
+		<!-- Its gap is padding inside the slide, so the line opens and closes without a jump. -->
+		<div class="pt-3" transition:reveal>
+			<HostingStatus class="w-full" />
+		</div>
+	{/if}
 
 	<div class="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
 		<FocusStage {session} {items} />
 
-		<aside class="flex flex-col gap-6 lg:sticky lg:top-24">
-			<section class="flex flex-col gap-3 rounded-3xl bg-card p-3 shadow-sm shadow-black/10">
+		<aside class="flex flex-col gap-6 lg:sticky lg:top-[9.5rem]">
+			<!-- Below lg the setlist is a sheet from the Prev/Next bar, so the leader never scrolls past the song. -->
+			<section
+				class="flex flex-col gap-3 rounded-3xl bg-card p-3 shadow-sm shadow-black/10 max-lg:hidden"
+			>
 				<div class="flex items-center justify-between gap-2 pl-2">
 					<h2 class="font-semibold">Setlist</h2>
 					<AddSongDialog
@@ -146,8 +180,9 @@
 						class="rounded-xl"
 						href="/jams/{session._id}/present"
 						target="_blank"
+						title="The QR code full screen, for a projector or TV. Opens in a new tab."
 					>
-						<Maximize /> Full screen
+						<Presentation /> Present
 					</Button>
 				</div>
 			</section>

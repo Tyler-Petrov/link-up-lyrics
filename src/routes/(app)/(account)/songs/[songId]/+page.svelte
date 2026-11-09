@@ -1,0 +1,97 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { useConvexClient } from 'convex-svelte';
+	import Trash from '@lucide/svelte/icons/trash-2';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import { api } from '#convex/_generated/api.js';
+	import { constantByTag } from '#convex/constants.js';
+	import { keySpelling } from '#lib/chart/index.js';
+	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { confirmation } from '#lib/confirmation.svelte.js';
+	import SongChart from '#lib/components/chart/song-chart.svelte';
+	import TransposeControl from '#lib/components/chart/transpose-control.svelte';
+	import { Button } from '#lib/components/ui/button/index.js';
+	import type { PageProps } from './$types';
+
+	let { params }: PageProps = $props();
+
+	const client = useConvexClient();
+	const arrangement = $derived(
+		await convexQuery(api.song.getArrangement, { songId: params.songId })
+	);
+	let semitones = $state(0);
+	const spelling = $derived(keySpelling(arrangement?.song.originalKeyTag, semitones));
+
+	async function deleteSong(songId: NonNullable<typeof arrangement>['song']['_id'], title: string) {
+		const confirmed = await confirmation({
+			title: 'Delete song',
+			message: `“${title}” and all its blocks will be deleted. Setlists that use it will lose it.`
+		});
+		if (!confirmed) return;
+		await client.mutation(api.song.remove, { songId });
+		await goto('/library');
+	}
+</script>
+
+<svelte:head>
+	<title>{arrangement?.song.title ?? 'Song not found'} · Link Up Lyrics</title>
+</svelte:head>
+
+{#if !arrangement}
+	<div class="flex flex-col items-center gap-4 pt-10 text-center">
+		<h1 class="page-title">Song not found</h1>
+		<p class="text-muted-foreground">It may have been deleted, or it isn’t shared with you.</p>
+		<Button href="/library" variant="secondary" class="rounded-xl">Back to your library</Button>
+	</div>
+{:else}
+	{@const song = arrangement.song}
+	<a
+		href="/library"
+		class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+	>
+		<ArrowLeft class="size-4" /> Library
+	</a>
+
+	<header class="mt-4 flex flex-col items-center gap-2 text-center">
+		<h1 class="page-title">{song.title}</h1>
+		{#if song.artist}
+			<p class="text-lg text-muted-foreground">{song.artist}</p>
+		{/if}
+		<div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+			<TransposeControl bind:semitones keyTag={song.originalKeyTag} />
+			{#if song.capo}
+				<span class="rounded-xl bg-card px-3 py-2 text-sm">Capo {song.capo}</span>
+			{/if}
+			{#if arrangement.canEdit}
+				<Button
+					variant="ghost"
+					size="icon"
+					class="rounded-xl text-muted-foreground hover:text-destructive"
+					aria-label="Delete song"
+					onclick={() => deleteSong(song._id, song.title)}
+				>
+					<Trash />
+				</Button>
+			{/if}
+		</div>
+	</header>
+
+	<!--
+		EDITOR MOUNT POINT. The read-only chart below is what everyone sees. When arrangement.canEdit, the editor
+		(M3: chord picker, bracket input, blocks/interludes/loose lines, drag reorder, repeats, line groups)
+		replaces it here, working on the same documents through song-line / song-section mutations.
+	-->
+	<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">
+		{#if arrangement.blocks.length}
+			<SongChart blocks={arrangement.blocks} {semitones} {spelling} />
+		{:else}
+			<p class="text-center text-muted-foreground">This song has no words yet.</p>
+		{/if}
+	</article>
+
+	<footer class="mt-6 flex flex-col items-center gap-1 text-center text-xs text-muted-foreground">
+		<span>{constantByTag('CopyrightSources', song.copyrightSourceTag).name}</span>
+		{#if song.copyrightLine}<span>{song.copyrightLine}</span>{/if}
+		{#if song.ccliSongNumber}<span>CCLI Song #{song.ccliSongNumber}</span>{/if}
+	</footer>
+{/if}

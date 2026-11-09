@@ -23,9 +23,16 @@
 	const arrangement = $derived(
 		await convexQuery(api.song.getArrangement, { songId: params.songId })
 	);
-	let semitones = $state(0);
+	/* Per song: navigating song → song starts over at the original key, out of edit mode. */
+	let semitones = $derived.by(() => {
+		void params.songId;
+		return 0;
+	});
 	/** The owner's edit mode; everyone else only ever sees the chart. */
-	let editing = $state(false);
+	let editing = $derived.by(() => {
+		void params.songId;
+		return false;
+	});
 	const spelling = $derived(keySpelling(arrangement?.song.originalKeyTag, semitones));
 
 	async function deleteSong(songId: NonNullable<typeof arrangement>['song']['_id'], title: string) {
@@ -96,7 +103,9 @@
 
 	{#if editing && arrangement.canEdit}
 		<div class="mt-10">
-			<SongEditor routeSongId={params.songId} {arrangement} />
+			{#key params.songId}
+				<SongEditor routeSongId={params.songId} {arrangement} />
+			{/key}
 		</div>
 	{:else}
 		<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">

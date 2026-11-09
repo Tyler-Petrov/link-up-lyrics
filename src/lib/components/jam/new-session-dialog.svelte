@@ -12,6 +12,8 @@
 	const form = createConvexForm({
 		schema: createJamSessionSchema,
 		mutation: api.jam_session.create,
+		// An empty name rather than none, so submitting it says the schema's own "Give the session a name".
+		initialData: () => ({ name: '' }),
 		afterSuccessfulSubmit: async ({ response: jamSessionId }) => {
 			await goto(`/jams/${jamSessionId}`);
 		}

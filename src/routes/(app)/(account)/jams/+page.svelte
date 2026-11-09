@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { flip } from 'svelte/animate';
-	import { fade } from 'svelte/transition';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import { api } from '#convex/_generated/api.js';
 	import { atTagOrHigher, constantByTag } from '#convex/constants.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { appear, glide, reveal } from '#lib/motion.js';
 	import NewSessionDialog from '#lib/components/jam/new-session-dialog.svelte';
 
 	const sessions = $derived(await convexQuery(api.jam_session.listMine, {}));
@@ -23,7 +22,7 @@
 <ul class="mt-8 grid gap-3 sm:grid-cols-2">
 	{#each sessions as session (session._id)}
 		{@const canLead = atTagOrHigher('JamSessionRoles', session.roleTag, 'leader')}
-		<li animate:flip={{ duration: 200 }} in:fade={{ duration: 150 }}>
+		<li animate:glide in:appear out:reveal>
 			<!-- Leaders open the console; players go where the music is. -->
 			<a
 				href={canLead ? `/jams/${session._id}` : `/live/${session._id}`}
@@ -36,7 +35,7 @@
 							<span
 								class="flex items-center gap-1.5 rounded-full bg-live/15 px-2 py-0.5 font-semibold text-live"
 							>
-								<span class="size-1.5 animate-pulse rounded-full bg-live"></span> Live
+								<span class="size-1.5 rounded-full bg-live motion-safe:animate-pulse"></span> Live
 							</span>
 						{/if}
 						<span class="rounded-full bg-background/50 px-2 py-0.5 text-muted-foreground">

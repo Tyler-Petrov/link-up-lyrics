@@ -3,7 +3,9 @@
 	import { PUBLIC_CLERK_BILLING_ENABLED } from '$app/env/public';
 	import UserCog from '@lucide/svelte/icons/user-cog';
 	import { api } from '#convex/_generated/api.js';
+	import { canHost } from '#convex/model/billing.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { Advanced } from '#lib/components/ui/advanced/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import HostingStatus from '#lib/components/billing/hosting-status.svelte';
 	import CcliLicenseForm from '#lib/components/account/ccli-license-form.svelte';
@@ -11,6 +13,8 @@
 
 	const user = $derived(await convexQuery(api.user.me, {}));
 	const clerk = useClerkContext();
+	// Plans are tucked away once you're set; open when hosting is blocked or the card failed.
+	const needsPlan = $derived(!canHost(user, Date.now()) || user.paymentStatusTag === 'pastDue');
 </script>
 
 <svelte:head>
@@ -22,7 +26,7 @@
 <div class="mt-8 flex flex-col gap-5">
 	<section class="card-section flex flex-wrap items-center gap-4">
 		{#if user.imageUrl}
-			<img src={user.imageUrl} alt="" class="size-14 rounded-2xl object-cover" />
+			<img src={user.imageUrl} alt="" class="size-14 rounded-2xl bg-muted object-cover" />
 		{/if}
 		<div class="min-w-0 flex-1 basis-40">
 			<p class="truncate text-lg font-semibold">{user.name}</p>
@@ -43,13 +47,16 @@
 			<h2 class="section-title">Hosting</h2>
 			<p class="section-lede">
 				You pay to host: creating jam sessions, going live, and inviting your band. Your library,
-				and being in someone else’s band, are always free. $1.99 a month or $20 a year, with a
-				14-day free trial and no card needed. A plan buys the tool, never any rights to the songs.
+				and being in someone else’s band, are always free. A plan buys the tool, never any rights
+				to the songs.
 			</p>
 		</header>
 		<HostingStatus class="self-start" />
 		{#if PUBLIC_CLERK_BILLING_ENABLED}
-			<PricingTable />
+			<!-- The plans and prices live in Clerk, so they're said only here. -->
+			<Advanced label="See plans" open={needsPlan}>
+				<PricingTable />
+			</Advanced>
 		{/if}
 	</section>
 
@@ -74,10 +81,6 @@
 		</header>
 		<UsageReport />
 	</section>
-
-	<p class="text-center text-sm text-muted-foreground">
-		<a href="/legal" class="underline-offset-4 hover:underline">Terms, copyright and takedowns</a>
-	</p>
 </div>
 
 <style>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { useConvexClient } from 'convex-svelte';
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
@@ -24,16 +25,20 @@
 	const arrangement = $derived(
 		await convexQuery(api.song.getArrangement, { songId: params.songId })
 	);
-	/* Per song: navigating song → song starts over at the original key, out of edit mode. */
+	/* Per song: navigating song → song starts over at the original key. */
 	let semitones = $derived.by(() => {
 		void params.songId;
 		return 0;
 	});
-	/** The owner's edit mode; everyone else only ever sees the chart. */
-	let editing = $derived.by(() => {
-		void params.songId;
-		return false;
-	});
+	/** The owner's edit mode, in the URL (`?edit`) so a reload keeps it; everyone else only sees the chart. */
+	const editing = $derived(!!arrangement?.canEdit && page.url.searchParams.has('edit'));
+
+	function toggleEditing() {
+		void goto(editing ? page.url.pathname : `${page.url.pathname}?edit`, {
+			replace: true,
+			reset: false
+		});
+	}
 	const spelling = $derived(keySpelling(arrangement?.song.originalKeyTag, semitones));
 
 	async function deleteSong(songId: NonNullable<typeof arrangement>['song']['_id'], title: string) {
@@ -82,7 +87,7 @@
 				<Button
 					variant={editing ? 'default' : 'secondary'}
 					class="rounded-xl"
-					onclick={() => (editing = !editing)}
+					onclick={toggleEditing}
 				>
 					{#if editing}<Check /> Done{:else}<Pencil /> Edit{/if}
 				</Button>
@@ -102,7 +107,7 @@
 		</div>
 	</header>
 
-	{#if editing && arrangement.canEdit}
+	{#if editing}
 		<div class="mt-10">
 			{#key params.songId}
 				<SongEditor routeSongId={params.songId} {arrangement} />

@@ -1,16 +1,13 @@
 <script lang="ts">
-	import { fade } from 'svelte/transition';
+	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { useConvexClient } from 'convex-svelte';
-	import { IsMounted } from 'runed';
-	import Trash from '@lucide/svelte/icons/trash-2';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { api } from '#convex/_generated/api.js';
 	import { constantByTag } from '#convex/constants.js';
 	import { keySpelling } from '#lib/chart/index.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
-	import { confirmation } from '#lib/confirmation.svelte.js';
+	import { reduced } from '#lib/motion.js';
 	import SongChart from '#lib/components/chart/song-chart.svelte';
 	import TransposeControl from '#lib/components/chart/transpose-control.svelte';
 	import SongCredits from '#lib/components/chart/song-credits.svelte';
@@ -23,7 +20,6 @@
 
 	let { params }: PageProps = $props();
 
-	const client = useConvexClient();
 	const arrangement = $derived(
 		await convexQuery(api.song.getArrangement, { songId: params.songId })
 	);
@@ -34,26 +30,23 @@
 	});
 	/** The owner's edit mode, in the URL (`?edit`) so a reload keeps it; everyone else only sees the chart. */
 	const editing = $derived(!!arrangement?.canEdit && page.url.searchParams.has('edit'));
-	/** The editor only renders in the browser: its chord-entry mode is a per-device setting the server can't see. */
-	const mounted = new IsMounted();
 
+	/** Chart and editor crossfade as one change of the page (the layout's page transitions skip `?edit`). */
 	function toggleEditing() {
-		void goto(editing ? page.url.pathname : `${page.url.pathname}?edit`, {
-			replace: true,
-			reset: false
-		});
+		const go = () =>
+			goto(editing ? page.url.pathname : `${page.url.pathname}?edit`, {
+				replace: true,
+				reset: false
+			});
+		if (reduced() || !document.startViewTransition) return void go();
+		document
+			.startViewTransition(async () => {
+				await go();
+				await tick();
+			})
+			.ready.catch(() => undefined);
 	}
 	const spelling = $derived(keySpelling(arrangement?.song.originalKeyTag, semitones));
-
-	async function deleteSong(songId: NonNullable<typeof arrangement>['song']['_id'], title: string) {
-		const confirmed = await confirmation({
-			title: 'Delete song',
-			message: `“${title}” and all its blocks will be deleted. Setlists that use it will lose it.`
-		});
-		if (!confirmed) return;
-		await client.mutation(api.song.remove, { songId });
-		await goto('/library');
-	}
 </script>
 
 <svelte:head>
@@ -81,16 +74,20 @@
 			<p class="text-lg text-muted-foreground">{song.artist}</p>
 		{/if}
 		<div class="mt-4 flex flex-wrap items-center justify-center gap-3">
+			<!-- All one height (h-10), so swapping the transpose control for Details never moves the row. -->
 			{#if !editing}
 				<TransposeControl bind:semitones keyTag={song.originalKeyTag} />
 			{/if}
 			{#if song.capo}
-				<span class="rounded-xl bg-card px-3 py-2 text-sm">Capo {song.capo}</span>
+				<span class="inline-flex h-10 items-center rounded-xl bg-card px-3 text-sm"
+					>Capo {song.capo}</span
+				>
 			{/if}
 			{#if arrangement.canEdit}
+				<!-- Named, so the toggle's crossfade slides it to its new place in the row. -->
 				<Button
 					variant={editing ? 'default' : 'secondary'}
-					class="rounded-xl"
+					class="h-10 rounded-xl px-4 [view-transition-name:song-edit-toggle]"
 					onclick={toggleEditing}
 				>
 					{#if editing}<Check /> Done{:else}<Pencil /> Edit{/if}
@@ -98,27 +95,16 @@
 				{#if editing}
 					<SongDetailsDialog {song} />
 				{/if}
-				<Button
-					variant="ghost"
-					size="icon"
-					class="rounded-xl text-muted-foreground hover:text-destructive"
-					aria-label="Delete song"
-					onclick={() => deleteSong(song._id, song.title)}
-				>
-					<Trash />
-				</Button>
 			{/if}
 		</div>
 	</header>
 
 	{#if editing}
-		{#if mounted.current}
-			<div class="mt-10" in:fade={{ duration: 150 }}>
-				{#key params.songId}
-					<SongEditor routeSongId={params.songId} {arrangement} />
-				{/key}
-			</div>
-		{/if}
+		<div class="mt-10">
+			{#key params.songId}
+				<SongEditor routeSongId={params.songId} {arrangement} />
+			{/key}
+		</div>
 	{:else}
 		<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">
 			{#if arrangement.blocks.length}
@@ -130,7 +116,10 @@
 	{/if}
 
 	<footer class="mt-6 flex flex-col items-center gap-1 text-center text-xs text-muted-foreground">
-		<span>{constantByTag('CopyrightSources', song.copyrightSourceTag).name}</span>
+		<!-- "Not Specified" would only read like an error to the room. -->
+		{#if song.copyrightSourceTag !== 'unknown'}
+			<span>{constantByTag('CopyrightSources', song.copyrightSourceTag).name}</span>
+		{/if}
 		<SongCredits
 			copyrightLine={song.copyrightLine}
 			ccliSongNumber={song.ccliSongNumber}

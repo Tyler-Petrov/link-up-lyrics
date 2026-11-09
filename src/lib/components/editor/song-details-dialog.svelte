@@ -1,18 +1,27 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { useConvexClient } from 'convex-svelte';
+	import { toast } from 'svelte-sonner';
 	import Settings from '@lucide/svelte/icons/settings-2';
+	import Trash from '@lucide/svelte/icons/trash-2';
 	import { api } from '#convex/_generated/api.js';
 	import type { Doc } from '#convex/_generated/dataModel.js';
-	import { CopyrightSources, KeyModes, MusicalKeys } from '#convex/constants.js';
+	import { CopyrightSources, KeyModes, MusicalKeys, constantByTag } from '#convex/constants.js';
 	import { songMetadataSchema } from '#convex/forms/song.js';
+	import { confirmation } from '#lib/confirmation.svelte.js';
+	import { errorMessage } from '#lib/errors.js';
 	import { createConvexForm } from '#lib/form.svelte.js';
+	import { reveal } from '#lib/motion.js';
+	import { Advanced } from '#lib/components/ui/advanced/index.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Input } from '#lib/components/ui/input/index.js';
 	import { Label } from '#lib/components/ui/label/index.js';
 
-	/** Title, artist, key, capo and copyright, through song.updateMetadata. */
+	/** Title, artist, key, capo and copyright, through song.updateMetadata; and deleting the song. */
 	let { song }: { song: Doc<'Song'> } = $props();
 
+	const client = useConvexClient();
 	const form = createConvexForm({
 		schema: songMetadataSchema,
 		mutation: api.song.updateMetadata,
@@ -36,12 +45,43 @@
 		songwriters = song.songwriters.join(', ');
 	}
 
+	/** What's under "Copyright & credits", so it can stay closed. */
+	const credits = $derived.by(() => {
+		const { copyrightSourceTag: source, ccliSongNumber, songwriters = [] } = form.data;
+		const parts = [
+			source === 'ccli' && ccliSongNumber
+				? `CCLI #${ccliSongNumber}`
+				: source && source !== 'unknown' && constantByTag('CopyrightSources', source).name,
+			songwriters.length &&
+				`${songwriters.length} ${songwriters.length === 1 ? 'songwriter' : 'songwriters'}`
+		].filter(Boolean);
+		return parts.length ? parts.join(' · ') : 'Not set';
+	});
+
+	/* To the library first, so the page doesn't show "Song not found" on its way out; the song then leaves the list. */
+	async function deleteSong() {
+		const confirmed = await confirmation({
+			title: 'Delete song',
+			message: `“${song.title}” and all its blocks will be deleted. Setlists that use it will lose it.`,
+			confirmLabel: 'Delete song'
+		});
+		if (!confirmed) return;
+		const songId = song._id;
+		await goto('/library');
+		try {
+			await client.mutation(api.song.remove, { songId });
+		} catch (error) {
+			console.error(error);
+			toast.error(errorMessage(error, 'Couldn’t delete the song. Try again.'));
+		}
+	}
+
 	const selectClass =
 		'h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30';
 </script>
 
 <Dialog.Root bind:open={form.state.open}>
-	<Button variant="secondary" class="rounded-xl" onclick={open}>
+	<Button variant="secondary" class="h-10 rounded-xl px-4" onclick={open}>
 		<Settings /> Details
 	</Button>
 	<Dialog.Content class="max-h-[92dvh] overflow-y-auto rounded-2xl sm:max-w-lg">
@@ -57,15 +97,18 @@
 			onfocusout={form.onfocusout}
 			oninput={form.oninput}
 		>
-			<div class="flex flex-col gap-2">
-				<Label for="song-title">Title</Label>
+			<!-- Spacing as padding, so an error line slides open instead of a gap appearing at once. -->
+			<div class="flex flex-col">
+				<Label for="song-title" class="pb-2">Title</Label>
 				<Input
 					id="song-title"
 					name="title"
 					bind:value={form.data.title}
 					aria-invalid={form.errors.title ? true : undefined}
 				/>
-				{#if form.errors.title}<p class="text-sm text-destructive">{form.errors.title[0]}</p>{/if}
+				{#if form.errors.title}
+					<p class="pt-2 text-sm text-destructive" transition:reveal>{form.errors.title[0]}</p>
+				{/if}
 			</div>
 			<div class="flex flex-col gap-2">
 				<Label for="song-artist">Artist</Label>
@@ -111,55 +154,64 @@
 					/>
 				</div>
 			</div>
-			<div class="flex flex-col gap-2">
-				<Label for="song-copyright-source">Copyright</Label>
-				<select
-					id="song-copyright-source"
-					name="copyrightSourceTag"
-					class={selectClass}
-					bind:value={form.data.copyrightSourceTag}
-				>
-					{#each CopyrightSources as source (source.tag)}
-						<option value={source.tag}>{source.name}</option>
-					{/each}
-				</select>
-			</div>
-			{#if form.data.copyrightSourceTag === 'ccli'}
+			<Advanced label="Copyright & credits · {credits}">
+				<div class="flex flex-col">
+					<Label for="song-copyright-source" class="pb-2">Copyright</Label>
+					<select
+						id="song-copyright-source"
+						name="copyrightSourceTag"
+						class={selectClass}
+						bind:value={form.data.copyrightSourceTag}
+					>
+						{#each CopyrightSources as source (source.tag)}
+							<option value={source.tag}>{source.name}</option>
+						{/each}
+					</select>
+					{#if form.data.copyrightSourceTag === 'ccli'}
+						<div class="flex flex-col gap-2 pt-3" transition:reveal>
+							<Label for="song-ccli">CCLI song number</Label>
+							<Input
+								id="song-ccli"
+								name="ccliSongNumber"
+								inputmode="numeric"
+								bind:value={form.data.ccliSongNumber}
+							/>
+						</div>
+					{/if}
+				</div>
 				<div class="flex flex-col gap-2">
-					<Label for="song-ccli">CCLI song number</Label>
+					<Label for="song-copyright-line">Copyright line</Label>
 					<Input
-						id="song-ccli"
-						name="ccliSongNumber"
-						inputmode="numeric"
-						bind:value={form.data.ccliSongNumber}
+						id="song-copyright-line"
+						name="copyrightLine"
+						placeholder="© 2004 sixsteps Music"
+						bind:value={form.data.copyrightLine}
 					/>
 				</div>
-			{/if}
-			<div class="flex flex-col gap-2">
-				<Label for="song-copyright-line">Copyright line</Label>
-				<Input
-					id="song-copyright-line"
-					name="copyrightLine"
-					placeholder="© 2004 sixsteps Music"
-					bind:value={form.data.copyrightLine}
-				/>
-			</div>
-			<div class="flex flex-col gap-2">
-				<Label for="song-songwriters">Songwriters</Label>
-				<Input
-					id="song-songwriters"
-					name="songwriters"
-					placeholder="Separate names with commas"
-					bind:value={songwriters}
-					oninput={() => {
-						form.data.songwriters = songwriters
-							.split(',')
-							.map((name) => name.trim())
-							.filter(Boolean);
-					}}
-				/>
-			</div>
+				<div class="flex flex-col gap-2">
+					<Label for="song-songwriters">Songwriters</Label>
+					<Input
+						id="song-songwriters"
+						name="songwriters"
+						placeholder="Separate names with commas"
+						bind:value={songwriters}
+						oninput={() => {
+							form.data.songwriters = songwriters
+								.split(',')
+								.map((name) => name.trim())
+								.filter(Boolean);
+						}}
+					/>
+				</div>
+			</Advanced>
 			<Dialog.Footer>
+				<Button
+					variant="ghost"
+					class="rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive sm:mr-auto"
+					onclick={deleteSong}
+				>
+					<Trash /> Delete song
+				</Button>
 				<Button type="submit" class="rounded-xl" disabled={form.submissionState === 'submitting'}>
 					{form.submissionState === 'submitting' ? 'Saving…' : 'Save details'}
 				</Button>

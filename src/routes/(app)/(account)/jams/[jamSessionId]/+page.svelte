@@ -16,6 +16,8 @@
 	import SessionQr from '#lib/components/jam/session-qr.svelte';
 	import SessionSettings from '#lib/components/jam/session-settings.svelte';
 	import Setlist from '#lib/components/jam/setlist.svelte';
+	import BandPanel from '#lib/components/band/band-panel.svelte';
+	import HostingStatus from '#lib/components/billing/hosting-status.svelte';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import type { PageProps } from './$types';
 
@@ -104,6 +106,9 @@
 			>
 				{#if session.isLive}End{:else}<Radio /> Go live{/if}
 			</Button>
+			{#if roleTag === 'owner' && !session.isLive}
+				<HostingStatus class="basis-full" />
+			{/if}
 		</div>
 	</header>
 
@@ -121,6 +126,8 @@
 				</div>
 				<Setlist {session} {items} />
 			</section>
+
+			<BandPanel jamSessionId={session._id} />
 
 			<section
 				class="flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm shadow-black/10"

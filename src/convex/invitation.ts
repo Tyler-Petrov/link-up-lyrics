@@ -65,7 +65,6 @@ export const listMine = authQuery({
 			const invitedBy = await ctx.db.get('User', row.invitedByUserId);
 			invitations.push({
 				_id: row._id,
-				roleTag: row.roleTag,
 				invitedEpoch: row.invitedEpoch,
 				jamSessionName: session.name,
 				invitedByName: invitedBy?.name ?? 'Someone'
@@ -129,7 +128,8 @@ export const invite = valibotMutation({
 		}
 
 		// No account yet? Clerk owns the email and the sign-up link.
-		if (!invitee) await ctx.scheduler.runAfter(0, internal.invitation.sendClerkInvitation, { email });
+		if (!invitee)
+			await ctx.scheduler.runAfter(0, internal.invitation.sendClerkInvitation, { email });
 		return null;
 	}
 });
@@ -218,7 +218,10 @@ export const remove = authMutation({
 
 /** Promotes a member to leader (runs the setlist and focus) or back to player. Owner only. */
 export const setRole = authMutation({
-	args: { memberId: v.id('JamSessionMember'), roleTag: v.union(v.literal('player'), v.literal('leader')) },
+	args: {
+		memberId: v.id('JamSessionMember'),
+		roleTag: v.union(v.literal('player'), v.literal('leader'))
+	},
 	handler: async (ctx, { memberId, roleTag }) => {
 		await requireOwnedMember(ctx, memberId);
 		await ctx.db.patch('JamSessionMember', memberId, { roleTag });

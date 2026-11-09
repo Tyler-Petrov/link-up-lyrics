@@ -17,6 +17,13 @@ export const variables = defineEnvVars({
 		static: true,
 		description: 'Clerk publishable key (pk_test_ in .env.local, pk_live_ in .env.production)'
 	},
+	PUBLIC_CLERK_BILLING_ENABLED: {
+		public: true,
+		static: true,
+		schema: (value) => value === 'true',
+		description:
+			'"true" once Clerk Billing is set up (plan "pro", both prices): /account shows the <PricingTable>. Clerk throws when it renders with billing off.'
+	},
 	CLERK_SECRET_KEY: {
 		public: false,
 		static: false,

@@ -8,14 +8,14 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { getAccount } from '#lib/account.svelte.js';
 	import { cn } from '#lib/utils.js';
+	import InvitationBadge from '#lib/components/band/invitation-badge.svelte';
 
 	const account = getAccount();
 
 	const links = [
 		{ href: '/library', label: 'Library' },
 		{ href: '/jams', label: 'Jams' },
-		// TODO(invitations): badge with the count of pending invitations (api.jamSessionMember…)
-		{ href: '/invitations', label: 'Invitations', badge: 0 }
+		{ href: '/invitations', label: 'Invitations', badge: true }
 	];
 	const isActive = (href: string) =>
 		page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
@@ -44,12 +44,8 @@
 					)}
 				>
 					{link.label}
-					{#if link.badge}
-						<span
-							class="absolute -top-0.5 -right-0.5 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[0.65rem] font-bold text-primary-foreground"
-						>
-							{link.badge}
-						</span>
+					{#if link.badge && account.isReady}
+						<InvitationBadge />
 					{/if}
 				</a>
 			{/each}

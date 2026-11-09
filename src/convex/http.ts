@@ -13,7 +13,8 @@ http.route({
 	method: 'POST',
 	handler: httpAction(async (ctx, request) => {
 		const body = await request.text();
-		if (!env.CLERK_WEBHOOK_SIGNING_SECRET) return new Response('Webhook not configured', { status: 503 });
+		if (!env.CLERK_WEBHOOK_SIGNING_SECRET)
+			return new Response('Webhook not configured', { status: 503 });
 		if (!(await verifySvix(env.CLERK_WEBHOOK_SIGNING_SECRET, request.headers, body)))
 			return new Response('Invalid signature', { status: 401 });
 

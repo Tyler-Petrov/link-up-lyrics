@@ -12,7 +12,9 @@
 		{@render children()}
 
 		{#snippet failed(error, reset)}
-			<div class="grid min-h-dvh place-items-center p-6"><PageError {error} {reset} /></div>
+			<div class="grid min-h-dvh place-items-center p-6">
+				<PageError {error} retry={reset} {reset} />
+			</div>
 		{/snippet}
 	</svelte:boundary>
 

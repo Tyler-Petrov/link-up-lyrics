@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/env';
+	import { page } from '$app/state';
 	import AppHeader from '#lib/components/app-header.svelte';
 	import PageError from '#lib/components/page-error.svelte';
 	import { Skeleton } from '#lib/components/ui/skeleton/index.js';
@@ -17,7 +18,7 @@
 			{@render children()}
 
 			{#snippet failed(error, reset)}
-				<PageError {error} {reset} />
+				<PageError {error} retry={reset} {reset} />
 			{/snippet}
 		</svelte:boundary>
 
@@ -28,4 +29,15 @@
 			</div>
 		{/snippet}
 	</main>
+
+	<!-- The one link to the terms and the takedown address, so anyone can find them signed in or out. -->
+	<footer class="mt-16 text-center text-xs">
+		<a
+			href="/legal"
+			aria-current={page.url.pathname === '/legal' ? 'page' : undefined}
+			class="rounded-md px-1 text-muted-foreground transition-colors hover:text-foreground"
+		>
+			Terms, copyright and takedowns
+		</a>
+	</footer>
 </div>

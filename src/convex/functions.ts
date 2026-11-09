@@ -16,7 +16,7 @@ import {
 } from './_generated/server';
 import { currentUser, ensureUser } from './model/user';
 import { touchSong } from './model/song';
-import { recordSongUsage } from './model/jam_session';
+import { focusPatch, recordSongUsage } from './model/jam_session';
 
 const triggers = new Triggers<DataModel>();
 
@@ -130,17 +130,22 @@ triggers.register('JamSession', async (ctx, change) => {
 	);
 });
 
-/* Removing the focused setlist item clears the focus, so the live page shows "waiting" instead of nothing. */
+/*
+ * Removing the focused setlist item moves the focus to the next song, or clears it at the end of the set so
+ * the live page shows "waiting" instead of nothing.
+ */
 triggers.register('JamSessionItem', async (ctx, change) => {
 	if (change.operation !== 'delete') return;
-	const session = await ctx.db.get('JamSession', change.oldDoc.jamSessionId);
-	if (session?.focusedItemId === change.id) {
-		await ctx.db.patch('JamSession', session._id, {
-			focusedItemId: undefined,
-			focusedGroupIndex: undefined,
-			focusedEpoch: Date.now()
-		});
-	}
+	const { jamSessionId, order } = change.oldDoc;
+	const session = await ctx.db.get('JamSession', jamSessionId);
+	if (session?.focusedItemId !== change.id) return;
+	const next = await ctx.db
+		.query('JamSessionItem')
+		.withIndex('by_jamSessionId_and_order', (q) =>
+			q.eq('jamSessionId', jamSessionId).gt('order', order)
+		)
+		.first();
+	await ctx.db.patch('JamSession', session._id, focusPatch(next?._id, 0));
 });
 
 export const mutation = customMutation(rawMutation, customCtx(triggers.wrapDB));

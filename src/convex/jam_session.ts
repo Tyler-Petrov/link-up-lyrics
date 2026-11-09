@@ -8,9 +8,9 @@ import { authMutation, authQuery, valibotMutation } from './functions';
 import { createJamSessionSchema, renameJamSessionSchema } from './forms/jam_session';
 import { jamSessionRole, requireJamSessionRole, requireSongOwner } from './model/access';
 import { requireCanHost } from './model/billing';
-import { focusPatch, groupCount, loadSetlist } from './model/jam_session';
+import { focusPatch, groupCount, loadSetlist, MAX_ITEMS } from './model/jam_session';
 import { presence } from './components';
-import { orderBetween } from '#lib/chart/index.js';
+import { fitsBetween, orderBetween } from '#lib/chart/index.js';
 import type { Id } from './_generated/dataModel';
 import type { MutationCtx } from './_generated/server';
 
@@ -115,7 +115,10 @@ export const addSong = authMutation({
 	handler: async (ctx, { jamSessionId, songId }) => {
 		await requireJamSessionRole(ctx, jamSessionId, 'leader');
 		await requireSongOwner(ctx, songId, ctx.user);
-		const last = (await loadSetlist(ctx, jamSessionId)).at(-1);
+		const items = await loadSetlist(ctx, jamSessionId);
+		if (items.length >= MAX_ITEMS)
+			throw new ConvexError(`A setlist holds up to ${MAX_ITEMS} songs`);
+		const last = items.at(-1);
 		return await ctx.db.insert('JamSessionItem', {
 			jamSessionId,
 			contentRef: { type: 'Song', _id: songId },
@@ -143,7 +146,10 @@ export const removeItem = authMutation({
 	}
 });
 
-/** Moves an item between its new neighbours (either may be missing at the ends). One row written. */
+/**
+ * Moves an item between its new neighbours (either may be missing at the ends). One row written, unless the
+ * gap has run out of precision and the setlist is renumbered first.
+ */
 export const moveItem = authMutation({
 	args: {
 		itemId: v.id('JamSessionItem'),
@@ -151,12 +157,23 @@ export const moveItem = authMutation({
 		nextId: v.optional(v.id('JamSessionItem'))
 	},
 	handler: async (ctx, { itemId, previousId, nextId }) => {
-		await requireItem(ctx, itemId);
-		const previous = previousId && (await ctx.db.get('JamSessionItem', previousId));
-		const next = nextId && (await ctx.db.get('JamSessionItem', nextId));
-		await ctx.db.patch('JamSessionItem', itemId, {
-			order: orderBetween(previous?.order, next?.order)
-		});
+		const item = await requireItem(ctx, itemId);
+		const neighbour = async (id: Id<'JamSessionItem'> | undefined) => {
+			if (!id) return undefined;
+			const doc = await ctx.db.get('JamSessionItem', id);
+			if (doc?.jamSessionId !== item.jamSessionId) throw new ConvexError('NOT_FOUND');
+			return doc;
+		};
+		let [previous, next] = [await neighbour(previousId), await neighbour(nextId)];
+		if (previous && next && previous.order >= next.order) throw new ConvexError('INVALID_MOVE');
+		let order = orderBetween(previous?.order, next?.order);
+		if (!fitsBetween(previous?.order, next?.order, [order])) {
+			for (const [index, row] of (await loadSetlist(ctx, item.jamSessionId)).entries())
+				await ctx.db.patch('JamSessionItem', row._id, { order: index });
+			[previous, next] = [await neighbour(previousId), await neighbour(nextId)];
+			order = orderBetween(previous?.order, next?.order);
+		}
+		await ctx.db.patch('JamSessionItem', itemId, { order });
 		return null;
 	}
 });
@@ -204,7 +221,12 @@ export const setFocus = authMutation({
 		await requireJamSessionRole(ctx, jamSessionId, 'leader');
 		const item = await ctx.db.get('JamSessionItem', itemId);
 		if (item?.jamSessionId !== jamSessionId) throw new ConvexError('NOT_FOUND');
-		await ctx.db.patch('JamSession', jamSessionId, focusPatch(itemId, groupIndex));
+		const lastGroup = (await groupCount(ctx, item)) - 1;
+		await ctx.db.patch(
+			'JamSession',
+			jamSessionId,
+			focusPatch(itemId, Math.min(groupIndex, lastGroup))
+		);
 		return null;
 	}
 });
@@ -224,10 +246,12 @@ export const step = authMutation({
 			if (items[0]) await ctx.db.patch('JamSession', jamSessionId, focusPatch(items[0]._id, 0));
 			return null;
 		}
-		const groupIndex = session.focusedGroupIndex ?? 0;
+		// The song may have lost groups since it was focused.
+		const count = await groupCount(ctx, item);
+		const groupIndex = Math.min(session.focusedGroupIndex ?? 0, count - 1);
 		let target: [Id<'JamSessionItem'>, number] | undefined;
 		if (direction === 1) {
-			if (groupIndex + 1 < (await groupCount(ctx, item))) target = [item._id, groupIndex + 1];
+			if (groupIndex + 1 < count) target = [item._id, groupIndex + 1];
 			else if (items[index + 1]) target = [items[index + 1]!._id, 0];
 		} else {
 			if (groupIndex > 0) target = [item._id, groupIndex - 1];

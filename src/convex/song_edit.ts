@@ -219,12 +219,38 @@ export const mergeLineUp = authMutation({
 	}
 });
 
+/**
+ * Deletes a line. `heirId` is the line after it when it starts a group: that line starts the group instead,
+ * so the rest of the group doesn't fold into the one above.
+ */
 export const removeLine = authMutation({
-	args: { lineId: v.id('SongLine') },
-	handler: async (ctx, { lineId }) => {
+	args: { lineId: v.id('SongLine'), heirId: v.optional(v.id('SongLine')) },
+	handler: async (ctx, { lineId, heirId }) => {
 		await requireLine(ctx, ctx.user, lineId);
 		await ctx.db.delete('SongLine', lineId);
+		if (heirId) await writeGroupMarks(ctx, ctx.user, [{ lineId: heirId, startsGroup: true }]);
 		return null;
+	}
+});
+
+/** Undoes removeLine: the line back in its place, and its group back from `heirId`. */
+export const restoreLine = authMutation({
+	args: {
+		line: v.object({
+			parentRef: parentRefValidator,
+			order: v.number(),
+			kindTag: convexTagValidator('SongLineKinds'),
+			characters: charactersValidator,
+			startsGroup: v.optional(v.boolean())
+		}),
+		heirId: v.optional(v.id('SongLine'))
+	},
+	handler: async (ctx, { line, heirId }) => {
+		const song = await requireParent(ctx, ctx.user, line.parentRef);
+		if (!Number.isFinite(line.order)) throw new ConvexError('INVALID_ORDER');
+		const lineId = await ctx.db.insert('SongLine', { ...line, songId: song._id });
+		if (heirId) await writeGroupMarks(ctx, ctx.user, [{ lineId: heirId, startsGroup: false }]);
+		return lineId;
 	}
 });
 

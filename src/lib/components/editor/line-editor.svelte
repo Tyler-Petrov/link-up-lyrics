@@ -27,13 +27,15 @@
 		line: Doc<'SongLine'>;
 		/** The line above in the same block, which Backspace at the start joins onto. */
 		previous?: Doc<'SongLine'>;
+		/** The line below in the same block, which starts the group in this one's place if it's deleted. */
+		next?: Doc<'SongLine'>;
 		/** A line in an interlude: chords only, so the picker shows just the lane. */
 		chordsOnly?: boolean;
 	};
-	let { line, previous, chordsOnly = false }: Props = $props();
+	let { line, previous, next, chordsOnly = false }: Props = $props();
 
 	const editor = getSongEditor();
-	const mode = $derived(editor.mode.current);
+	const mode = $derived(editor.mode);
 
 	let input = $state<HTMLInputElement>();
 	/* While focused, the unsaved edit. Brackets keep the raw text, so a half-typed `[G` isn't reparsed away. */
@@ -55,6 +57,7 @@
 
 	function flush() {
 		clearTimeout(saveTimer);
+		editor.drafts.delete(line._id);
 		if (!unsaved) return;
 		const characters = unsaved;
 		unsaved = null;
@@ -71,12 +74,13 @@
 			draftCharacters = editCharacters(characters, input.value, caret);
 		}
 		unsaved = edited();
+		editor.drafts.add(line._id);
 		clearTimeout(saveTimer);
 		saveTimer = setTimeout(flush, 600);
 	}
 
-	/* A line removed or left while its save is pending still saves (a deleted line just fails quietly). */
-	onDestroy(() => void flush()?.catch(() => {}));
+	/* A line removed or left while its save is pending still saves. */
+	onDestroy(flush);
 
 	function onblur() {
 		void flush();
@@ -103,18 +107,21 @@
 
 	async function replaceWith(lines: ChartCharacter[][], focusIndex: number, caret: number) {
 		clearTimeout(saveTimer);
+		editor.drafts.delete(line._id);
 		unsaved = null;
 		draftCharacters = mode === 'brackets' ? null : lines[0]!;
 		draftText = mode === 'brackets' ? serializeLine(lines[0]!) : null;
-		await editor.whileLinesChange(async () => {
+		await editor.changeLines(async () => {
 			const ids = await editor.replaceLine(line._id, lines);
-			await editor.focusLine(ids[focusIndex - 1] ?? line._id, caret);
+			return ids && { lineId: ids[focusIndex - 1] ?? line._id, caret };
 		});
 	}
 
-	/* While a split or join is saving, typing would land on the old line: hold it until focus moves. */
+	/* Until the line a split or join is for has focus, typing would land on this one: keep it for that line. */
 	function onbeforeinput(event: InputEvent) {
-		if (editor.linesChanging) event.preventDefault();
+		if (!editor.linesChanging) return;
+		event.preventDefault();
+		if (event.inputType === 'insertText' && event.data) editor.held += event.data;
 	}
 
 	async function onkeydown(event: KeyboardEvent) {
@@ -136,20 +143,19 @@
 			const joined = [...previous.characters, ...edited()];
 			const caret = caretAfter(previous.characters);
 			void flush(); // mutations run in order, so the join sees this line's latest words
-			// This line is gone once the merge lands, so read its props first.
-			const previousId = previous._id;
-			await editor.whileLinesChange(async () => {
-				await editor.mergeLineUp(line._id, previousId, joined);
-				await editor.focusLine(previousId, caret);
-			});
+			// The line above shows the join straight away (this one leaves as it does), so focus moves there now
+			// and typing carries on in it while the join saves.
+			const lineId = previous._id;
+			void editor.mergeLineUp(line._id, lineId, joined);
+			await editor.changeLines(async () => ({ lineId, caret, characters: joined }));
 		} else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
 			const inputs = [...document.querySelectorAll<HTMLInputElement>('[data-line-input]')];
-			const next = inputs[inputs.indexOf(input) + (event.key === 'ArrowUp' ? -1 : 1)];
-			if (!next) return;
+			const target = inputs[inputs.indexOf(input) + (event.key === 'ArrowUp' ? -1 : 1)];
+			if (!target) return;
 			event.preventDefault();
-			const caret = Math.min(input.selectionStart ?? 0, next.value.length);
-			next.focus();
-			next.setSelectionRange(caret, caret);
+			const caret = Math.min(input.selectionStart ?? 0, target.value.length);
+			target.focus();
+			target.setSelectionRange(caret, caret);
 		}
 	}
 
@@ -181,9 +187,19 @@
 	$effect(() => {
 		const request = editor.focusRequest;
 		if (request?.lineId !== line._id || !input) return;
+		if (request.characters) {
+			draftCharacters = mode === 'brackets' ? null : request.characters;
+			draftText = mode === 'brackets' ? serializeLine(request.characters) : null;
+			input.value = draftText ?? lineText(request.characters);
+		}
 		input.focus();
 		input.setSelectionRange(request.caret, request.caret);
-		editor.focusRequest = null;
+		// What was typed while the line was being made, typed in for real.
+		const held = editor.focused();
+		if (held) {
+			input.setRangeText(held, request.caret, request.caret, 'end');
+			input.dispatchEvent(new Event('input', { bubbles: true }));
+		}
 	});
 
 	/* ---------- The chord lane (picker mode) ---------- */
@@ -210,8 +226,22 @@
 </script>
 
 <div class="group/line flex min-w-0 flex-1 items-end gap-1">
-	{#if mode === 'picker'}
-		<div class="min-w-0 flex-1 [scrollbar-width:thin] overflow-x-auto overscroll-x-contain">
+	{#if !mode}
+		<!-- Until the mode is known: the words, as tall as the default mode's row on this kind of screen. -->
+		<p
+			class={cn(
+				'min-h-9 min-w-0 flex-1 truncate px-2 py-1.5 font-chart text-base',
+				!chordsOnly &&
+					'pointer-coarse:min-h-[calc(1.75rem+1.375em)] pointer-coarse:px-0 pointer-coarse:pt-[1.625rem] pointer-coarse:pb-0.5 pointer-coarse:leading-snug sm:pointer-coarse:text-lg'
+			)}
+		>
+			{lineText(line.characters)}
+		</p>
+	{:else if mode === 'picker'}
+		<!-- A long line scrolls sideways; its right edge fades while there's more to see. -->
+		<div
+			class="min-w-0 flex-1 scroll-fade [scrollbar-width:thin] overflow-x-auto overscroll-x-contain"
+		>
 			<div class="w-max min-w-full font-chart text-base leading-snug sm:text-lg">
 				<!-- The lane: one invisible slot per character (and a few past the end, for trailing chords). -->
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -281,12 +311,38 @@
 			spellcheck="false"
 		/>
 	{/if}
+	<!-- Shown on hover, or for the line being edited. On touch it takes no room until then, so the words
+	     get the width (and a stray tap can't delete another line). -->
 	<button
 		type="button"
-		class="mb-0.5 shrink-0 rounded-lg p-1.5 text-muted-foreground opacity-0 transition-opacity group-focus-within/line:opacity-100 group-hover/line:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 pointer-coarse:opacity-50"
+		class="mb-0.5 w-7 shrink-0 overflow-hidden rounded-lg p-1.5 text-muted-foreground opacity-0 transition-[opacity,width,padding] group-focus-within/line:opacity-100 group-hover/line:opacity-100 hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 pointer-coarse:w-0 pointer-coarse:px-0 pointer-coarse:group-focus-within/line:w-7 pointer-coarse:group-focus-within/line:px-1.5"
 		aria-label="Delete line"
-		onclick={() => editor.removeLine(line._id)}
+		title="Delete line"
+		onclick={() => editor.removeLine(line, next)}
 	>
 		<X class="size-4" />
 	</button>
 </div>
+
+<style>
+	/* Scroll-driven: no animation (so no fade) when the line fits; the fade goes once scrolled to the end. */
+	@property --fade {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
+	.scroll-fade {
+		mask-image: linear-gradient(to left, transparent, #000 var(--fade));
+		animation: scroll-fade linear both;
+		animation-timeline: scroll(self inline);
+	}
+	@keyframes scroll-fade {
+		0%,
+		90% {
+			--fade: 2rem;
+		}
+		100% {
+			--fade: 0px;
+		}
+	}
+</style>

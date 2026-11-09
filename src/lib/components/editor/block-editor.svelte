@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { slide } from 'svelte/transition';
-	import { flip } from 'svelte/animate';
 	import GripVertical from '@lucide/svelte/icons/grip-vertical';
 	import Music from '@lucide/svelte/icons/music';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -9,10 +7,11 @@
 	import CornerUpLeft from '@lucide/svelte/icons/corner-up-left';
 	import AudioLines from '@lucide/svelte/icons/audio-lines';
 	import type { SortableEvent } from 'sortablejs';
-	import type { Id } from '#convex/_generated/dataModel.js';
+	import type { Doc, Id } from '#convex/_generated/dataModel.js';
 	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import ChartLine from '#lib/components/chart/chart-line.svelte';
+	import { glide, reveal } from '#lib/motion.js';
 	import { sortable } from '#lib/sortable.js';
 	import { cn } from '#lib/utils.js';
 	import { getSongEditor, type LineDrop } from './editor.svelte.js';
@@ -95,7 +94,7 @@
 		onUpdate: onLineDrop
 	});
 
-	function onLineDrop({ item, from, to, oldIndex }: SortableEvent) {
+	function onLineDrop({ item, to }: SortableEvent) {
 		const rows = [...to.closest('section')!.querySelectorAll<HTMLElement>('[data-line-id]')];
 		const at = rows.indexOf(item);
 		const idOf = (row: HTMLElement | undefined) =>
@@ -105,9 +104,6 @@
 			belowId: idOf(rows[at + 1]),
 			atGroupTop: to.querySelector('[data-line-id]') === item
 		};
-		// Svelte owns the rows: put this one back where it was, and the (optimistic) data moves it.
-		item.remove();
-		from.insertBefore(item, from.children[oldIndex!] ?? null);
 		return onMoveLine(idOf(item)!, drop);
 	}
 
@@ -142,14 +138,29 @@
 
 	async function addLine() {
 		const id = await editor.addLine(editor.parentRefOf(block), block.lines.at(-1)?.order);
-		await editor.focusLine(id, 0);
+		if (id) editor.focusLine(id, 0);
 	}
+
+	/* With a mouse, the handles and block actions show on hover or focus, so the words read like the chart. */
+	/*
+	 * A line slides open when it's new (Enter, Add line, Undo) and shut when it leaves the block. One that only
+	 * changes group is a different row in a different group's list, so without this it would slide out of one
+	 * and into the other and the block would jump.
+	 */
+	const isNew = (line: Doc<'SongLine'>) => Math.abs(Date.now() - line._creationTime) < 5000;
+	const lineIn = (node: Element, line: Doc<'SongLine'>) =>
+		isNew(line) ? reveal(node) : { duration: 0 };
+	const lineOut = (node: Element, line: Doc<'SongLine'>) =>
+		lineIndex.has(line._id) ? { duration: 0 } : reveal(node);
+
+	const quiet =
+		'transition-opacity pointer-fine:opacity-0 pointer-fine:group-focus-within/block:opacity-100 pointer-fine:group-hover/block:opacity-100';
 </script>
 
 <section
 	id={section ? `block-${section._id}` : undefined}
 	class={cn(
-		'flex flex-col gap-2 rounded-3xl p-2 transition-[box-shadow,background-color] duration-500 sm:p-3',
+		'group/block flex flex-col gap-2 rounded-3xl p-2 transition-[box-shadow,background-color] duration-500 sm:p-3',
 		isInterlude
 			? 'border-2 border-dashed border-muted-foreground/35 bg-foreground/[0.02]'
 			: block.type === 'loose'
@@ -163,8 +174,12 @@
 	<header class="flex min-h-10 items-center gap-1">
 		<button
 			type="button"
-			class="block-handle cursor-grab touch-none rounded-lg p-1.5 text-muted-foreground hover:bg-accent active:cursor-grabbing"
+			class={cn(
+				'block-handle cursor-grab touch-none rounded-lg p-1.5 text-muted-foreground hover:bg-accent active:cursor-grabbing',
+				quiet
+			)}
 			aria-label="Drag to reorder"
+			title="Drag to reorder"
 		>
 			<GripVertical class="size-4" />
 		</button>
@@ -206,12 +221,12 @@
 					<CornerUpLeft class="size-3" /> Edit original
 				</button>
 			{/if}
-			<div class="ml-auto flex shrink-0 items-center">
+			<div class={cn('ml-auto flex shrink-0 items-center', quiet)}>
 				<button
 					type="button"
 					class="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
-					title="Repeat this block at the end of the song"
-					aria-label="Repeat {section.name}"
+					title="Repeat at the end of the song"
+					aria-label="Repeat {section.name} at the end of the song"
 					onclick={() => editor.repeatSection(section._id)}
 				>
 					<Repeat class="size-4" />
@@ -219,6 +234,7 @@
 				<button
 					type="button"
 					class="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+					title="Delete"
 					aria-label="Delete {section.name}"
 					onclick={remove}
 				>
@@ -237,7 +253,7 @@
 			{@const tinted = group.index % 2 === 0}
 			<div
 				class={cn('relative rounded-2xl', tinted ? 'bg-foreground/[0.035]' : 'bg-transparent')}
-				animate:flip={{ duration: 200 }}
+				animate:glide
 				{@attach !isRepeat && lineSortable}
 			>
 				<span
@@ -269,13 +285,14 @@
 					{@const index = lineIndex.get(line._id)!}
 					<div
 						class={cn(
-							'flex min-h-9 items-stretch rounded-xl transition-colors',
+							'group/row flex min-h-9 items-stretch rounded-xl transition-colors',
 							isSelected(index) && 'bg-primary/25'
 						)}
 						data-select-line={index}
 						data-block-key={block.key}
 						data-line-id={isRepeat ? undefined : line._id}
-						transition:slide={{ duration: 160 }}
+						in:lineIn={line}
+						out:lineOut={line}
 					>
 						<!-- The rail: drag along it to select lines (long-press first on touch). -->
 						<div
@@ -294,10 +311,15 @@
 						{#if isRepeat}
 							<ChartLine characters={line.characters} class="py-1 opacity-80" />
 						{:else}
-							<LineEditor {line} previous={block.lines[index - 1]} chordsOnly={isInterlude} />
+							<LineEditor
+								{line}
+								previous={block.lines[index - 1]}
+								next={block.lines[index + 1]}
+								chordsOnly={isInterlude}
+							/>
 							<button
 								type="button"
-								class="line-handle mb-0.5 shrink-0 cursor-grab touch-none self-end rounded-lg p-1.5 text-muted-foreground/60 hover:bg-accent hover:text-foreground active:cursor-grabbing"
+								class="line-handle mb-0.5 shrink-0 cursor-grab touch-none self-end rounded-lg p-1.5 text-muted-foreground/60 transition-opacity hover:bg-accent hover:text-foreground active:cursor-grabbing pointer-fine:opacity-0 pointer-fine:group-focus-within/row:opacity-100 pointer-fine:group-hover/row:opacity-100"
 								aria-label="Drag to move this line"
 								title="Drag to move this line"
 							>

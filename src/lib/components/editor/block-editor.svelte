@@ -1,8 +1,3 @@
-<script module lang="ts">
-	/** Where a dragged line was taken from (it may land in another block's list). */
-	let lineDragOrigin: { parent: Node; next: Node | null } | undefined;
-</script>
-
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { flip } from 'svelte/animate';
@@ -102,13 +97,10 @@
 		group: 'song-lines',
 		handle: '.line-handle',
 		draggable: '[data-line-id]',
-		onStart: ({ item }) => {
-			lineDragOrigin = { parent: item.parentNode!, next: item.nextSibling };
-		},
 		onUpdate: onLineDrop
 	});
 
-	function onLineDrop({ item, to }: SortableEvent) {
+	function onLineDrop({ item, from, to, oldIndex }: SortableEvent) {
 		const rows = [...to.closest('section')!.querySelectorAll<HTMLElement>('[data-line-id]')];
 		const at = rows.indexOf(item);
 		const idOf = (row: HTMLElement | undefined) =>
@@ -119,9 +111,9 @@
 			belowId: idOf(rows[at + 1]),
 			atGroupTop: to.querySelector('[data-line-id]') === item
 		};
-		// Svelte owns the rows: put this one back, and the (optimistic) data moves it.
-		lineDragOrigin?.parent.insertBefore(item, lineDragOrigin.next);
-		lineDragOrigin = undefined;
+		// Svelte owns the rows: put this one back where it was, and the (optimistic) data moves it.
+		item.remove();
+		from.insertBefore(item, from.children[oldIndex!] ?? null);
 		return onMoveLine(idOf(item)!, drop);
 	}
 

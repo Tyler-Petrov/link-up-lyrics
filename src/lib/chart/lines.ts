@@ -44,18 +44,27 @@ export type Segment = {
 	text: string;
 };
 
+/** A word with the spaces after it, cut at its chords. */
+export type Word = { start: number; segments: Segment[] };
+
+const isSpace = (c: ChartCharacter | undefined) => c?.character.trim() === '';
+
 /**
- * Cuts the line at every chord-bearing character. Each segment renders as a two-row column — chord over its
- * syllable — so chords stay glued to their text while lines wrap naturally. §8.
+ * Cuts the line into words, and each word at every chord-bearing character. A segment renders as a two-row
+ * column, chord over its syllable, and a word's columns stay together, so a line wraps only between words
+ * (never at a chord in the middle of one) and the chords stay glued to their text. §8.
  */
-export function segmentCharacters(characters: ChartCharacter[]): Segment[] {
-	const segments: Segment[] = [];
+export function chartWords(characters: ChartCharacter[]): Word[] {
+	const words: Word[] = [];
 	characters.forEach((c, index) => {
+		if (!words.length || (!isSpace(c) && isSpace(characters[index - 1])))
+			words.push({ start: index, segments: [] });
+		const segments = words.at(-1)!.segments;
 		const last = segments.at(-1);
 		if (!last || c.chord) segments.push({ start: index, chord: c.chord, text: c.character });
 		else last.text += c.character;
 	});
-	return segments;
+	return words;
 }
 
 /** Characters with every chord removed: what the room sees on the live page. */

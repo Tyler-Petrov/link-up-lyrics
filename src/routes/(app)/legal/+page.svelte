@@ -1,6 +1,6 @@
 <script lang="ts">
-	// TODO(Tyler): register COPYRIGHT_EMAIL as the DMCA designated agent (U.S. Copyright Office).
-	import { COPYRIGHT_EMAIL } from '#lib/legal.js';
+	// TODO(Tyler): register this address as the DMCA designated agent (U.S. Copyright Office).
+	const contact = 'copyright@linkuplyrics.com';
 </script>
 
 <svelte:head>
@@ -38,7 +38,7 @@
 		<h2>Copyright takedowns</h2>
 		<p>
 			If you own a song and believe it’s here without permission, email
-			<a href="mailto:{COPYRIGHT_EMAIL}">{COPYRIGHT_EMAIL}</a> with:
+			<a href="mailto:{contact}">{contact}</a> with:
 		</p>
 		<ul>
 			<li>the work you own, and the link where it appears;</li>

@@ -132,8 +132,7 @@ export default defineSchema({
 	/*
 	 * One row per song shown in a live session, for the church's CCLI usage report (per-date CSV). A
 	 * historical record: the song's credits are copied in when it's shown, so the report stays right if the
-	 * song is edited or deleted (deleting a song never touches these). Rows from before the copy have only
-	 * title and ccliSongNumber. §18.4.
+	 * song is edited or deleted (deleting a song never touches these). §18.4.
 	 */
 	SongUsage: defineTable({
 		ownerId: v.id('User'), // the session owner, whose church reports it

@@ -18,11 +18,7 @@ export const updateLicenseNumber = valibotMutation({
 	}
 });
 
-/**
- * Songs shown in sessions the caller hosted between two times, oldest first, with the credits as they were
- * when shown. Rows from before credits were copied (no copyrightSourceTag) take artist and copyright from
- * the song now, and go without them if it's deleted.
- */
+/** Songs shown in sessions the caller hosted between two times, oldest first, with the credits as shown. */
 export const usage = authQuery({
 	args: { fromEpoch: epoch(), toEpoch: epoch() },
 	handler: async (ctx, { fromEpoch, toEpoch }) => {
@@ -32,13 +28,6 @@ export const usage = authQuery({
 				q.eq('ownerId', ctx.user._id).gte('usedEpoch', fromEpoch).lt('usedEpoch', toEpoch)
 			)
 			.take(2000);
-		const songs = new Map(
-			await Promise.all(
-				[...new Set(rows.filter((row) => !row.copyrightSourceTag).map((row) => row.songId))].map(
-					async (id) => [id, await ctx.db.get('Song', id)] as const
-				)
-			)
-		);
 		const sessions = new Map(
 			await Promise.all(
 				[...new Set(rows.map((row) => row.jamSessionId))].map(
@@ -46,18 +35,15 @@ export const usage = authQuery({
 				)
 			)
 		);
-		return rows.map((row) => {
-			const credits = row.copyrightSourceTag ? row : songs.get(row.songId);
-			return {
-				_id: row._id,
-				usedEpoch: row.usedEpoch,
-				title: row.title,
-				artist: credits?.artist,
-				ccliSongNumber: row.ccliSongNumber,
-				copyrightSourceTag: credits?.copyrightSourceTag,
-				copyrightLine: credits?.copyrightLine,
-				jamSessionName: sessions.get(row.jamSessionId)?.name ?? 'Deleted session'
-			};
-		});
+		return rows.map((row) => ({
+			_id: row._id,
+			usedEpoch: row.usedEpoch,
+			title: row.title,
+			artist: row.artist,
+			ccliSongNumber: row.ccliSongNumber,
+			copyrightSourceTag: row.copyrightSourceTag,
+			copyrightLine: row.copyrightLine,
+			jamSessionName: sessions.get(row.jamSessionId)?.name ?? 'Deleted session'
+		}));
 	}
 });

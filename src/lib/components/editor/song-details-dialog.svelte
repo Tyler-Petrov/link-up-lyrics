@@ -2,7 +2,7 @@
 	import Settings from '@lucide/svelte/icons/settings-2';
 	import { api } from '#convex/_generated/api.js';
 	import type { Doc } from '#convex/_generated/dataModel.js';
-	import { CopyrightSources, MusicalKeys } from '#convex/constants.js';
+	import { CopyrightSources, KeyModes, MusicalKeys } from '#convex/constants.js';
 	import { songMetadataSchema } from '#convex/forms/song.js';
 	import { createConvexForm } from '#lib/form.svelte.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
@@ -84,8 +84,12 @@
 						}
 					>
 						<option value="">Not set</option>
-						{#each MusicalKeys as key (key.tag)}
-							<option value={key.tag}>{key.name}</option>
+						{#each KeyModes as mode (mode.tag)}
+							<optgroup label={mode.name}>
+								{#each MusicalKeys.filter((key) => key.modeTag === mode.tag) as key (key.tag)}
+									<option value={key.tag}>{key.name}</option>
+								{/each}
+							</optgroup>
 						{/each}
 					</select>
 				</div>

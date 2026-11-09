@@ -24,34 +24,49 @@ export const ChordRoots = Object.freeze([
 
 export type Spelling = 'sharp' | 'flat';
 
-/* A key IS a root plus an accidental, so keys are derived from ChordRoots. The flatMap below loses the  */
-/* literal tags; this mapped type buys them back so convexTagValidator('MusicalKeys') is a real union.  */
-type KeyTagOf<R extends (typeof ChordRoots)[number]> =
-	R['allowedAccidentals'][number] extends infer A extends string
-		? A extends 'natural'
-			? R['tag']
-			: `${R['tag']}${Capitalize<A>}`
-		: never;
-export type MusicalKeyTag = KeyTagOf<(typeof ChordRoots)[number]>;
+/* `signatureShift` is how far round the circle of fifths the key signature sits from the root's major:  */
+/* A minor shares C major's signature, three fifths below A major's. That's why Cm spells like E♭.       */
+export const KeyModes = Object.freeze([
+	{ tag: 'major', name: 'Major', suffix: '', aliases: [], signatureShift: 0 },
+	{ tag: 'minor', name: 'Minor', suffix: 'm', aliases: ['min'], signatureShift: -3 }
+] as const);
+
+/* A key IS a root, an accidental and a mode, so keys are derived: "c", "eFlat", "cSharpMinor". The flatMap */
+/* below loses the literal tags; these types buy them back so convexTagValidator('MusicalKeys') is a real  */
+/* union. The default part (natural, major) adds nothing to the tag.                                       */
+type TagPart<T extends string> = T extends 'natural' | 'major' ? '' : Capitalize<T>;
+type RootKeyTag<R extends (typeof ChordRoots)[number]> = R extends unknown
+	? `${R['tag']}${TagPart<R['allowedAccidentals'][number]>}`
+	: never;
+export type MusicalKeyTag =
+	`${RootKeyTag<(typeof ChordRoots)[number]>}${TagPart<(typeof KeyModes)[number]['tag']>}`;
+const tagPart = (tag: string) =>
+	tag === 'natural' || tag === 'major' ? '' : tag[0]!.toUpperCase() + tag.slice(1);
+
+/* Steps of 7 semitones (a fifth) from C: G 1, D 2, A 3, E 4, B 5, and F one fifth below, -1. */
+const fifthsFromC = (semitones: number) => ((semitones * 7 + 1) % 12) - 1;
 
 export const MusicalKeys = Object.freeze(
-	ChordRoots.flatMap((root) =>
-		root.allowedAccidentals.map((accidentalTag) => {
-			const accidental = Accidentals.find((a) => a.tag === accidentalTag)!;
-			return {
-				tag: (accidentalTag === 'natural'
-					? root.tag
-					: root.tag + accidentalTag[0]!.toUpperCase() + accidentalTag.slice(1)) as MusicalKeyTag,
-				name: root.name + accidental.symbol,
-				rootTag: root.tag,
-				accidentalTag,
-				semitones: (root.semitones + accidental.semitones + 12) % 12,
-				/* Circle of fifths: only F and the flat keys are spelled with flats (F♯ is a sharp key). */
-				spelling: (accidentalTag === 'flat' || (root.tag === 'f' && accidentalTag === 'natural')
-					? 'flat'
-					: 'sharp') as Spelling
-			};
-		})
+	KeyModes.flatMap((mode) =>
+		ChordRoots.flatMap((root) =>
+			root.allowedAccidentals.map((accidentalTag) => {
+				const accidental = Accidentals.find((a) => a.tag === accidentalTag)!;
+				/* Sharps (positive) or flats (negative) in the key signature: E♭ -3, Cm -3, F♯m 3. */
+				const signature =
+					fifthsFromC(root.semitones) + 7 * accidental.semitones + mode.signatureShift;
+				return {
+					tag: (root.tag + tagPart(accidentalTag) + tagPart(mode.tag)) as MusicalKeyTag,
+					name: root.name + accidental.symbol + mode.suffix,
+					rootTag: root.tag,
+					accidentalTag,
+					modeTag: mode.tag,
+					semitones: (root.semitones + accidental.semitones + 12) % 12,
+					signature,
+					/* Flat keys (F, B♭, Dm, Cm…) are spelled with flats; the rest, F♯ included, with sharps. */
+					spelling: (signature < 0 ? 'flat' : 'sharp') as Spelling
+				};
+			})
+		)
 	)
 );
 
@@ -183,6 +198,7 @@ export const AnalyticsEvents = Object.freeze([
 export const constants = {
 	Accidentals,
 	ChordRoots,
+	KeyModes,
 	MusicalKeys,
 	ChordQualities,
 	SongLineKinds,

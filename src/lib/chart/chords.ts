@@ -5,6 +5,7 @@
 import {
 	ChordQualities,
 	ChordRoots,
+	KeyModes,
 	MusicalKeys,
 	constantByTag,
 	type ConstantTag,
@@ -43,24 +44,25 @@ function noteName(rootTag: RootTag, accidentalTag: AccidentalTag) {
 	);
 }
 
-/** The sharps-or-flats preference for a key: only F and the flat keys use flats. §5.2. */
+/** The sharps-or-flats preference for a key: flat keys (F, B♭, Dm, Cm…) use flats. §5.2. */
 export function keySpelling(keyTag: MusicalKeyTag | undefined, semitones = 0): Spelling {
-	if (!keyTag) return 'sharp';
-	const key = constantByTag('MusicalKeys', keyTag);
-	if (semitones === 0) return key.spelling;
-	return transposeKey(keyTag, semitones).spelling;
+	return keyTag ? transposeKey(keyTag, semitones).spelling : 'sharp';
 }
 
-/** The key a song lands in after transposing, spelled the conventional way (E♭, not D♯; F♯, not G♭). */
+/**
+ * The key a song lands in after transposing, in the same mode and spelled the conventional way: the
+ * spelling with the fewest sharps or flats (E♭, not D♯; C♯m, not D♭m). A tie keeps the sharp one (F♯, D♯m).
+ * Zero returns the key unchanged.
+ */
 export function transposeKey(keyTag: MusicalKeyTag, semitones: number) {
-	const pc = mod12(constantByTag('MusicalKeys', keyTag).semitones + semitones);
-	const candidates = MusicalKeys.filter((key) => key.semitones === pc);
-	// Two spellings only for black keys; prefer the flat one except F♯.
-	return candidates.length === 1
-		? candidates[0]!
-		: (candidates.find((key) =>
-				pc === 6 ? key.accidentalTag === 'sharp' : key.accidentalTag === 'flat'
-			) ?? candidates[0]!);
+	const key = constantByTag('MusicalKeys', keyTag);
+	if (mod12(semitones) === 0) return key;
+	const pc = mod12(key.semitones + semitones);
+	return MusicalKeys.filter(
+		(candidate) => candidate.modeTag === key.modeTag && candidate.semitones === pc
+	).reduce((best, candidate) =>
+		Math.abs(candidate.signature) < Math.abs(best.signature) ? candidate : best
+	);
 }
 
 /** The chord moved by `semitones`, respelled for `spelling`. Zero returns it unchanged. */
@@ -166,29 +168,20 @@ export function chordToText(chord: Chord) {
 	);
 }
 
-/** "G", "E♭" — a key's display name. */
+/** "G", "E♭", "C♯m" — a key's display name. */
 export function keyName(keyTag: MusicalKeyTag) {
 	return constantByTag('MusicalKeys', keyTag).name;
 }
 
-/**
- * Reads a key the way it's written in ChordPro `{key: …}`: "G", "Eb", "F#m". A minor key is stored as its
- * relative major (Cm → E♭), which has the same key signature, so its chords spell with the right accidentals.
- */
+/** Reads a key the way it's written in ChordPro `{key: …}`: "G", "Eb", "F#m", "Cmin". */
 export function parseKey(text: string): MusicalKeyTag | undefined {
 	const note = parseNote(text.trim());
-	const isMinor = note && ['m', 'min'].includes(note.rest);
-	if (!note || (!isMinor && note.rest !== '')) return undefined;
-	const key = MusicalKeys.find(
-		(key) => key.rootTag === note.rootTag && key.accidentalTag === note.accidentalTag
-	);
-	if (!key || !isMinor) return key?.tag;
-	const relative = transposeKey(key.tag, 3);
-	// E♭m → G♭, not F♯: keep the minor's own accidental where the relative major can have it.
-	return (
-		MusicalKeys.find(
-			(candidate) =>
-				candidate.semitones === relative.semitones && candidate.accidentalTag === note.accidentalTag
-		) ?? relative
-	).tag;
+	const mode = KeyModes.find((m) => [m.suffix, ...m.aliases].some((s) => s === note?.rest));
+	if (!note || !mode) return undefined;
+	return MusicalKeys.find(
+		(key) =>
+			key.rootTag === note.rootTag &&
+			key.accidentalTag === note.accidentalTag &&
+			key.modeTag === mode.tag
+	)?.tag;
 }

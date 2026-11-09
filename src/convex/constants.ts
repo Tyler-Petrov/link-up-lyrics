@@ -74,8 +74,17 @@ export const ChordQualities = Object.freeze([
 		aliases: ['min7', '-7'],
 		intervals: [0, 3, 7, 10]
 	},
+	{ tag: 'sixth', name: '6th', suffix: '6', aliases: [], intervals: [0, 4, 7, 9] },
+	{ tag: 'ninth', name: '9th', suffix: '9', aliases: [], intervals: [0, 4, 7, 10, 14] },
 	{ tag: 'sus2', name: 'Suspended 2nd', suffix: 'sus2', aliases: [], intervals: [0, 2, 7] },
 	{ tag: 'sus4', name: 'Suspended 4th', suffix: 'sus4', aliases: ['sus'], intervals: [0, 5, 7] },
+	{
+		tag: 'dominant7sus4',
+		name: 'Suspended 7th',
+		suffix: '7sus4',
+		aliases: ['7sus'],
+		intervals: [0, 5, 7, 10]
+	},
 	{ tag: 'add9', name: 'Add 9', suffix: 'add9', aliases: ['add2', '2'], intervals: [0, 4, 7, 14] },
 	{
 		tag: 'diminished',
@@ -83,6 +92,20 @@ export const ChordQualities = Object.freeze([
 		suffix: 'dim',
 		aliases: ['°', 'o'],
 		intervals: [0, 3, 6]
+	},
+	{
+		tag: 'diminished7',
+		name: 'Diminished 7th',
+		suffix: 'dim7',
+		aliases: ['°7', 'o7'],
+		intervals: [0, 3, 6, 9]
+	},
+	{
+		tag: 'halfDiminished',
+		name: 'Half-Diminished',
+		suffix: 'm7b5',
+		aliases: ['m7♭5', 'min7b5', 'ø', 'ø7'],
+		intervals: [0, 3, 6, 10]
 	},
 	{ tag: 'augmented', name: 'Augmented', suffix: 'aug', aliases: ['+'], intervals: [0, 4, 8] },
 	{ tag: 'power', name: 'Power Chord', suffix: '5', aliases: [], intervals: [0, 7] },

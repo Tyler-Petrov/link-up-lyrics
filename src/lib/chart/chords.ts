@@ -171,11 +171,24 @@ export function keyName(keyTag: MusicalKeyTag) {
 	return constantByTag('MusicalKeys', keyTag).name;
 }
 
-/** "G", "Eb", "F#m"'s root — reads a key the way it's written in ChordPro `{key: …}`. Minor keys use their root. */
+/**
+ * Reads a key the way it's written in ChordPro `{key: …}`: "G", "Eb", "F#m". A minor key is stored as its
+ * relative major (Cm → E♭), which has the same key signature, so its chords spell with the right accidentals.
+ */
 export function parseKey(text: string): MusicalKeyTag | undefined {
 	const note = parseNote(text.trim());
-	if (!note || !['', 'm', 'min'].includes(note.rest)) return undefined;
-	return MusicalKeys.find(
+	const isMinor = note && ['m', 'min'].includes(note.rest);
+	if (!note || (!isMinor && note.rest !== '')) return undefined;
+	const key = MusicalKeys.find(
 		(key) => key.rootTag === note.rootTag && key.accidentalTag === note.accidentalTag
-	)?.tag;
+	);
+	if (!key || !isMinor) return key?.tag;
+	const relative = transposeKey(key.tag, 3);
+	// E♭m → G♭, not F♯: keep the minor's own accidental where the relative major can have it.
+	return (
+		MusicalKeys.find(
+			(candidate) =>
+				candidate.semitones === relative.semitones && candidate.accidentalTag === note.accidentalTag
+		) ?? relative
+	).tag;
 }

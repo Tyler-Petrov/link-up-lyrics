@@ -2,12 +2,15 @@
 	import { fade, fly } from 'svelte/transition';
 	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
 	import type { Spelling } from '#convex/constants.js';
+	import type { Id } from '#convex/_generated/dataModel.js';
 	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
 	import { cn } from '#lib/utils.js';
 	import ChartGroupView from './chart-group.svelte';
 	import { TextSizes, type ViewerSettings } from './viewer-settings.svelte.js';
 
 	type Props = {
+		/** The setlist item on screen; moving to another one follows the current group again. */
+		focusedItemId: Id<'JamSessionItem'>;
 		blocks: ArrangementBlock[];
 		/** groupArrangement(blocks), and the focused group's index already clamped to them (the page owns both). */
 		groups: ChartGroup[];
@@ -19,6 +22,7 @@
 		settings: ViewerSettings;
 	};
 	let {
+		focusedItemId,
 		blocks,
 		groups,
 		groupIndex: index,
@@ -47,34 +51,34 @@
 
 	/*
 	 * Whole song follows the current group until the singer scrolls by hand, then waits for "Jump to current".
-	 * Switching to Whole song follows again. Only the singer's own scroll pauses it (one while a finger is down,
-	 * or right after a wheel turn or scroll key), so the page's smooth scrolls to the current group never do.
+	 * Switching to Whole song, or the leader moving to another song, follows again. Only the singer's own scroll
+	 * pauses it (one right after a finger drag, wheel turn or scroll key), so the page's smooth scrolls never do.
 	 */
-	let following = $derived(settings.mode === 'song');
-	let touching = false;
+	const itemId = $derived(focusedItemId); // so a query update on the same item isn't a new song
+	let following = $derived.by(() => {
+		void itemId;
+		return settings.mode === 'song';
+	});
 	let intentAt = -Infinity;
 	const ScrollKeys = new Set(['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ']);
 
 	function onscroll() {
-		if (touching || performance.now() - intentAt < 300) following = false;
+		if (performance.now() - intentAt < 300) following = false;
 	}
-	/** A wheel turn or scroll key on the page (not in the settings sheet). */
+	/** A finger drag, wheel turn or scroll key on the page (not in the settings sheet). */
 	function noteIntent(event: Event) {
 		if (!(event.target instanceof Element && event.target.closest('[role="dialog"]')))
 			intentAt = performance.now();
 	}
 	function jumpToCurrent() {
-		intentAt = -Infinity; // the wheel turn or Space just before this press wasn't a scroll away
+		intentAt = -Infinity; // the drag, wheel turn or Space just before this press wasn't a scroll away
 		following = true; // the current group's attachment scrolls to it
 	}
-	const trackTouch = (event: TouchEvent) => (touching = event.touches.length > 0);
 </script>
 
 <svelte:window
 	{onscroll}
-	ontouchstart={trackTouch}
-	ontouchend={trackTouch}
-	ontouchcancel={trackTouch}
+	ontouchmove={noteIntent}
 	onwheel={noteIntent}
 	onkeydown={(event) => ScrollKeys.has(event.key) && noteIntent(event)}
 />

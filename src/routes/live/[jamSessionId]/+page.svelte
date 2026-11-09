@@ -120,13 +120,15 @@
 	{/if}
 
 	{#if live.state === 'live'}
+		<!-- Whole song leaves room under the credits for the Jump to current chip. -->
 		<main
 			class={[
-				'flex flex-1 flex-col px-5 pb-16',
-				settings.mode === 'song' ? 'pt-4' : 'justify-center py-10'
+				'flex flex-1 flex-col px-5',
+				settings.mode === 'song' ? 'pt-4 pb-36' : 'justify-center pt-10 pb-16'
 			]}
 		>
 			<LiveStage
+				focusedItemId={live.focusedItemId}
 				blocks={live.blocks}
 				{groups}
 				{groupIndex}

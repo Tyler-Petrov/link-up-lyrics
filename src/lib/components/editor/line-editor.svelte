@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import X from '@lucide/svelte/icons/x';
 	import type { Doc } from '#convex/_generated/dataModel.js';
 	import type { ChartCharacter } from '#convex/validators.js';
 	import {
+		bracketCaretIndex,
 		editCharacters,
 		formatChord,
 		graphemes,
@@ -43,7 +45,9 @@
 	);
 
 	let saveTimer: ReturnType<typeof setTimeout> | undefined;
-	let dirty = false;
+	/* The edit waiting on the timer. Plain, not $state: an unmount's teardown reads state as of before the
+	   last flush, which could miss the final keystroke. */
+	let unsaved: ChartCharacter[] | null = null;
 
 	function edited(): ChartCharacter[] {
 		return mode === 'brackets' && draftText !== null ? parseBracketLine(draftText) : characters;
@@ -51,9 +55,10 @@
 
 	function flush() {
 		clearTimeout(saveTimer);
-		if (!dirty) return;
-		dirty = false;
-		return editor.setCharacters(line._id, edited());
+		if (!unsaved) return;
+		const characters = unsaved;
+		unsaved = null;
+		return editor.setCharacters(line._id, characters);
 	}
 
 	function oninput() {
@@ -65,10 +70,13 @@
 			).length;
 			draftCharacters = editCharacters(characters, input.value, caret);
 		}
-		dirty = true;
+		unsaved = edited();
 		clearTimeout(saveTimer);
 		saveTimer = setTimeout(flush, 600);
 	}
+
+	/* A line removed or left while its save is pending still saves (a deleted line just fails quietly). */
+	onDestroy(() => void flush()?.catch(() => {}));
 
 	function onblur() {
 		void flush();
@@ -81,10 +89,12 @@
 		const text = input!.value;
 		const start = input!.selectionStart ?? text.length;
 		const end = input!.selectionEnd ?? start;
-		if (mode === 'brackets')
-			return [parseBracketLine(text.slice(0, start)), parseBracketLine(text.slice(end))];
-		const at = (offset: number) => graphemes(text.slice(0, offset)).length;
-		return [characters.slice(0, at(start)), characters.slice(at(end))];
+		const all = mode === 'brackets' ? parseBracketLine(text) : characters;
+		const at = (offset: number) =>
+			mode === 'brackets'
+				? bracketCaretIndex(text, offset)
+				: graphemes(text.slice(0, offset)).length;
+		return [all.slice(0, at(start)), all.slice(at(end))];
 	}
 
 	/** Where the caret goes after `characters`, in this input's units. */
@@ -93,15 +103,26 @@
 
 	async function replaceWith(lines: ChartCharacter[][], focusIndex: number, caret: number) {
 		clearTimeout(saveTimer);
-		dirty = false;
+		unsaved = null;
 		draftCharacters = mode === 'brackets' ? null : lines[0]!;
 		draftText = mode === 'brackets' ? serializeLine(lines[0]!) : null;
-		const ids = await editor.replaceLine(line._id, lines);
-		await editor.focusLine(ids[focusIndex - 1] ?? line._id, caret);
+		await editor.whileLinesChange(async () => {
+			const ids = await editor.replaceLine(line._id, lines);
+			await editor.focusLine(ids[focusIndex - 1] ?? line._id, caret);
+		});
+	}
+
+	/* While a split or join is saving, typing would land on the old line: hold it until focus moves. */
+	function onbeforeinput(event: InputEvent) {
+		if (editor.linesChanging) event.preventDefault();
 	}
 
 	async function onkeydown(event: KeyboardEvent) {
 		if (!input) return;
+		if (editor.linesChanging) {
+			if (event.key === 'Enter' || event.key === 'Backspace') event.preventDefault();
+			return;
+		}
 		if (event.key === 'Enter') {
 			event.preventDefault();
 			await replaceWith(split(), 1, 0);
@@ -117,8 +138,10 @@
 			void flush(); // mutations run in order, so the join sees this line's latest words
 			// This line is gone once the merge lands, so read its props first.
 			const previousId = previous._id;
-			await editor.mergeLineUp(line._id, previousId, joined);
-			await editor.focusLine(previousId, caret);
+			await editor.whileLinesChange(async () => {
+				await editor.mergeLineUp(line._id, previousId, joined);
+				await editor.focusLine(previousId, caret);
+			});
 		} else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
 			const inputs = [...document.querySelectorAll<HTMLInputElement>('[data-line-input]')];
 			const next = inputs[inputs.indexOf(input) + (event.key === 'ArrowUp' ? -1 : 1)];
@@ -134,6 +157,7 @@
 		const text = event.clipboardData?.getData('text/plain');
 		if (!text || !/[\r\n]/.test(text)) return;
 		event.preventDefault();
+		if (editor.linesChanging) return;
 		const pasted = text
 			.replace(/\r\n?/g, '\n')
 			.replace(/\n$/, '')
@@ -221,6 +245,7 @@
 						{value}
 						{oninput}
 						{onblur}
+						{onbeforeinput}
 						{onkeydown}
 						{onpaste}
 						class={cn(
@@ -243,6 +268,7 @@
 			{value}
 			{oninput}
 			{onblur}
+			{onbeforeinput}
 			{onkeydown}
 			{onpaste}
 			class={cn(

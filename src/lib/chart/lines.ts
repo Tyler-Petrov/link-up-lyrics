@@ -88,6 +88,17 @@ export function parseBracketLine(text: string): ChartCharacter[] {
 	return characters;
 }
 
+/**
+ * The index in parseBracketLine(text) of the character a caret at `offset` sits before. A chord just before
+ * the caret belongs to the character after it, so `Amazing [G]|grace` is at the "g"; at the end of the line it
+ * stays on its padding space. (Parsing the text before the caret plus one more character puts a pending
+ * chord on that character instead of a padding space.)
+ */
+export function bracketCaretIndex(text: string, offset: number) {
+	if (offset >= text.length) return parseBracketLine(text).length;
+	return parseBracketLine(text.slice(0, offset) + 'x').length - 1;
+}
+
 /** Characters → `[G]Amazing [G7]grace`. The inverse of parseBracketLine. */
 export function serializeLine(characters: ChartCharacter[]) {
 	return characters

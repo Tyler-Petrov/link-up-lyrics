@@ -155,6 +155,19 @@ export class SongEditorState {
 		);
 	}
 
+	/** True while Enter, Backspace or a paste is saving and focus hasn't moved yet: lines hold typing. */
+	linesChanging = $state(false);
+
+	/** Runs a split or join, holding typing in every line until it's done and focus has moved. */
+	async whileLinesChange(change: () => Promise<void>) {
+		this.linesChanging = true;
+		try {
+			await change();
+		} finally {
+			this.linesChanging = false;
+		}
+	}
+
 	/** Focuses a line after it renders (a new line from Enter, the line above after a merge). */
 	async focusLine(lineId: string, caret: number) {
 		this.focusRequest = { lineId, caret };

@@ -190,7 +190,7 @@
 			</div>
 		</fieldset>
 
-		<fieldset class="flex flex-col gap-2 disabled:opacity-40" disabled={isNoChord}>
+		<fieldset class="flex flex-col disabled:opacity-40" disabled={isNoChord}>
 			<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 				Bass note <span class="font-normal normal-case">(optional, for a slash chord like G/B)</span
 				>
@@ -224,7 +224,8 @@
 			</div>
 			{#if bassRootTag}
 				{@const bassRoot = bassRootTag}
-				<div class="grid grid-cols-3 gap-1.5" transition:slide={{ duration: 160 }}>
+				<!-- Its gap is padding, so it slides open and shut with the row. -->
+				<div class="grid grid-cols-3 gap-1.5 pt-2" transition:slide={{ duration: 160 }}>
 					{#each Accidentals as option (option.tag)}
 						<button
 							type="button"

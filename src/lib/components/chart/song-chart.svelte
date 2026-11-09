@@ -57,8 +57,8 @@
 							class={cn(
 								'flex flex-col gap-1 rounded-r-xl border-l-4 py-1 pl-3',
 								group.index % 2 === 0
-									? 'border-primary/50 bg-primary/5'
-									: 'border-primary/20 bg-transparent'
+									? 'border-muted-foreground/50 bg-foreground/[0.035]'
+									: 'border-muted-foreground/20 bg-transparent'
 							)}
 						>
 							{#each group.lines as line (line._id)}

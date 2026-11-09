@@ -51,7 +51,7 @@
 				data-id={item._id}
 				class={cn(
 					'rounded-2xl border-2 transition-colors',
-					isFocused ? 'border-primary/70 bg-primary/10' : 'border-transparent bg-background/40'
+					isFocused ? 'border-primary bg-card' : 'border-transparent bg-background/40'
 				)}
 			>
 				<div class="flex items-center gap-1 py-1 pr-1.5 pl-0.5">

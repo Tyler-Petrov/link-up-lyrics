@@ -92,7 +92,7 @@
 				<p class="truncate text-xs text-muted-foreground">{band.owner.email}</p>
 			</div>
 			<span
-				class="inline-flex items-center gap-1 rounded-lg bg-primary/15 px-2 py-0.5 text-xs text-primary"
+				class="inline-flex items-center gap-1 rounded-lg bg-secondary px-2 py-0.5 text-xs text-muted-foreground"
 			>
 				<Crown class="size-3" /> Owner
 			</span>

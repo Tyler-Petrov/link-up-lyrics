@@ -69,7 +69,7 @@
 				>
 					<button
 						type="button"
-						class="flex h-16 items-center justify-center gap-2 rounded-2xl bg-card text-lg font-semibold shadow-lg shadow-black/25 transition-[transform,opacity] active:scale-[0.97] disabled:opacity-40"
+						class="flex h-16 items-center justify-center gap-2 rounded-2xl bg-card text-lg font-semibold shadow-lg shadow-black/25 transition-[transform,background-color,color] active:scale-[0.97] disabled:bg-card/60 disabled:text-muted-foreground disabled:shadow-none"
 						disabled={isFirst}
 						onclick={() => step(-1)}
 					>
@@ -77,7 +77,7 @@
 					</button>
 					<button
 						type="button"
-						class="flex h-16 items-center justify-center gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow-lg shadow-black/25 transition-[transform,opacity] active:scale-[0.97] disabled:opacity-40"
+						class="flex h-16 items-center justify-center gap-2 rounded-2xl bg-primary text-lg font-semibold text-primary-foreground shadow-lg shadow-black/25 transition-[transform,background-color,color] active:scale-[0.97] disabled:bg-card/60 disabled:text-muted-foreground disabled:shadow-none"
 						disabled={isLast}
 						onclick={() => step(1)}
 					>
@@ -123,7 +123,7 @@
 			type="button"
 			class={cn(
 				'w-full scroll-mt-24 scroll-mb-36 rounded-2xl border-2 px-4 py-3 text-left transition-colors',
-				isCurrent ? 'border-primary bg-primary/10' : 'border-transparent bg-card/60 hover:bg-card'
+				isCurrent ? 'border-primary bg-card' : 'border-transparent bg-card/60 hover:bg-card'
 			)}
 			aria-current={isCurrent ? 'step' : undefined}
 			onclick={() =>

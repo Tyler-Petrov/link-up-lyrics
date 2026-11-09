@@ -151,7 +151,7 @@
 	class={cn(
 		'flex flex-col gap-2 rounded-3xl p-2 transition-[box-shadow,background-color] duration-500 sm:p-3',
 		isInterlude
-			? 'border-2 border-dashed border-primary/35 bg-primary/[0.04]'
+			? 'border-2 border-dashed border-muted-foreground/35 bg-foreground/[0.02]'
 			: block.type === 'loose'
 				? 'bg-transparent'
 				: isRepeat
@@ -170,7 +170,7 @@
 		</button>
 		{#if section}
 			{#if isInterlude}
-				<Music class="size-4 shrink-0 text-primary" />
+				<Music class="size-4 shrink-0 text-chord" />
 			{:else if isRepeat}
 				<Repeat class="size-4 shrink-0 text-muted-foreground" />
 			{/if}
@@ -236,14 +236,16 @@
 		{#each groups as group (group.key)}
 			{@const tinted = group.index % 2 === 0}
 			<div
-				class={cn('relative rounded-2xl', tinted ? 'bg-primary/[0.07]' : 'bg-transparent')}
+				class={cn('relative rounded-2xl', tinted ? 'bg-foreground/[0.035]' : 'bg-transparent')}
 				animate:flip={{ duration: 200 }}
 				{@attach !isRepeat && lineSortable}
 			>
 				<span
 					class={cn(
 						'pointer-events-none absolute top-1.5 left-1 flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold tabular-nums',
-						tinted ? 'bg-primary text-primary-foreground' : 'bg-primary/30 text-foreground'
+						tinted
+							? 'bg-muted-foreground text-background'
+							: 'bg-muted-foreground/45 text-foreground'
 					)}
 					title="Line group {group.index + 1}: what the leader advances to live"
 					>{group.index + 1}</span
@@ -251,7 +253,7 @@
 				<div
 					class={cn(
 						'pointer-events-none absolute top-8 bottom-2 left-[0.8rem] w-1 rounded-full',
-						tinted ? 'bg-primary/70' : 'bg-primary/30'
+						tinted ? 'bg-muted-foreground/70' : 'bg-muted-foreground/45'
 					)}
 				></div>
 				{#if !group.lines.length}

@@ -39,7 +39,13 @@
 				>Open your library</Button
 			>
 		{:else}
-			<SignInButton mode="modal" asChild>
+			<!-- Lands where the button promised, whether they sign in or sign up. -->
+			<SignInButton
+				mode="modal"
+				forceRedirectUrl="/jams"
+				signUpForceRedirectUrl="/jams"
+				asChild
+			>
 				{#snippet children({ signIn }: { signIn: () => void })}
 					<Button size="lg" class="h-11 rounded-xl px-6 text-base" onclick={signIn}
 						>Start a jam</Button

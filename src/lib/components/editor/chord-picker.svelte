@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
+	import { slide } from 'svelte/transition';
 	import X from '@lucide/svelte/icons/x';
 	import {
 		Accidentals,
@@ -14,9 +15,10 @@
 	import { getSongEditor } from './editor.svelte.js';
 
 	/*
-	 * Root, then only that root's legal accidentals, then a quality: an impossible chord can't be entered.
-	 * A bottom sheet on phones, a centred card elsewhere. Native <dialog>, so focus, Escape and the inert
-	 * background come free. Plan §10.
+	 * Root, then only that root's legal accidentals, then a quality, then optionally a bass note for a slash
+	 * chord (G/B), again with only its legal accidentals: an impossible chord can't be entered. A bottom sheet
+	 * on phones, a centred card elsewhere. Native <dialog>, so focus, Escape and the inert background come
+	 * free. Plan §10.
 	 */
 	const editor = getSongEditor();
 	const target = $derived(editor.picker);
@@ -25,12 +27,22 @@
 	let rootTag = $state<ConstantTag<'ChordRoots'>>('g');
 	let accidentalTag = $state<ConstantTag<'Accidentals'>>('natural');
 	let qualityTag = $state<ConstantTag<'ChordQualities'>>('major');
-	/** Kept from the chord being edited: the picker doesn't set a bass note, brackets do. */
-	let bass = $state<Pick<Chord, 'bassRootTag' | 'bassAccidentalTag'>>({});
+	/** The slash chord's bass note; none for most chords. */
+	let bassRootTag = $state<ConstantTag<'ChordRoots'>>();
+	let bassAccidentalTag = $state<ConstantTag<'Accidentals'>>('natural');
 
 	const existing = $derived(target?.characters[target.index]?.chord);
-	const root = $derived(constantByTag('ChordRoots', rootTag));
-	const chord = $derived<Chord>({ rootTag, accidentalTag, qualityTag, ...bass });
+	const isNoChord = $derived(qualityTag === 'noChord');
+	const chord = $derived<Chord>(
+		bassRootTag && !isNoChord
+			? { rootTag, accidentalTag, qualityTag, bassRootTag, bassAccidentalTag }
+			: { rootTag, accidentalTag, qualityTag }
+	);
+
+	const allows = (rootTag: ConstantTag<'ChordRoots'>, accidentalTag: string) =>
+		(constantByTag('ChordRoots', rootTag).allowedAccidentals as readonly string[]).includes(
+			accidentalTag
+		);
 	/** The line with the target character marked, for context. */
 	const context = $derived.by(() => {
 		if (!target) return { before: '', at: '', after: '' };
@@ -54,15 +66,20 @@
 			rootTag = chord.rootTag;
 			accidentalTag = chord.accidentalTag;
 			qualityTag = chord.qualityTag;
-			bass = { bassRootTag: chord.bassRootTag, bassAccidentalTag: chord.bassAccidentalTag };
-		} else bass = {};
+			bassRootTag = chord.bassRootTag;
+			bassAccidentalTag = chord.bassAccidentalTag ?? 'natural';
+		} else bassRootTag = undefined;
 		if (!element.open) element.showModal();
 	}
 
 	function pickRoot(tag: ConstantTag<'ChordRoots'>) {
 		rootTag = tag;
-		const allowed = constantByTag('ChordRoots', tag).allowedAccidentals as readonly string[];
-		if (!allowed.includes(accidentalTag)) accidentalTag = 'natural';
+		if (!allows(tag, accidentalTag)) accidentalTag = 'natural';
+	}
+
+	function pickBass(tag: ConstantTag<'ChordRoots'> | undefined) {
+		bassRootTag = tag;
+		if (tag && !allows(tag, bassAccidentalTag)) bassAccidentalTag = 'natural';
 	}
 
 	function finish(picked: Chord | undefined | 'cancel') {
@@ -129,10 +146,9 @@
 			</legend>
 			<div class="grid grid-cols-3 gap-1.5">
 				{#each Accidentals as option (option.tag)}
-					{@const allowed = (root.allowedAccidentals as readonly string[]).includes(option.tag)}
 					<button
 						type="button"
-						disabled={!allowed}
+						disabled={!allows(rootTag, option.tag)}
 						class={cn(
 							'h-11 rounded-xl text-base font-semibold transition-colors disabled:opacity-25',
 							option.tag === accidentalTag
@@ -172,6 +188,62 @@
 					</button>
 				{/each}
 			</div>
+		</fieldset>
+
+		<fieldset class="flex flex-col gap-2 disabled:opacity-40" disabled={isNoChord}>
+			<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+				Bass note <span class="font-normal normal-case">(optional, for a slash chord like G/B)</span
+				>
+			</legend>
+			<div class="grid grid-cols-8 gap-1.5">
+				<button
+					type="button"
+					class={cn(
+						'h-10 rounded-xl text-xs font-semibold transition-colors',
+						!bassRootTag
+							? 'bg-primary text-primary-foreground'
+							: 'bg-secondary enabled:hover:bg-accent'
+					)}
+					aria-pressed={!bassRootTag}
+					onclick={() => pickBass(undefined)}>None</button
+				>
+				{#each ChordRoots as option (option.tag)}
+					<button
+						type="button"
+						class={cn(
+							'h-10 rounded-xl text-base font-bold transition-colors',
+							option.tag === bassRootTag
+								? 'bg-primary text-primary-foreground'
+								: 'bg-secondary enabled:hover:bg-accent'
+						)}
+						aria-pressed={option.tag === bassRootTag}
+						aria-label="Bass {option.name}"
+						onclick={() => pickBass(option.tag)}>{option.name}</button
+					>
+				{/each}
+			</div>
+			{#if bassRootTag}
+				{@const bassRoot = bassRootTag}
+				<div class="grid grid-cols-3 gap-1.5" transition:slide={{ duration: 160 }}>
+					{#each Accidentals as option (option.tag)}
+						<button
+							type="button"
+							disabled={!allows(bassRoot, option.tag)}
+							class={cn(
+								'h-9 rounded-xl text-sm font-semibold transition-colors disabled:opacity-25',
+								option.tag === bassAccidentalTag
+									? 'bg-primary text-primary-foreground'
+									: 'bg-secondary enabled:hover:bg-accent'
+							)}
+							aria-pressed={option.tag === bassAccidentalTag}
+							aria-label="Bass {option.name}"
+							onclick={() => (bassAccidentalTag = option.tag)}
+						>
+							{option.symbol || '♮'}
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</fieldset>
 
 		<footer class="flex gap-2">

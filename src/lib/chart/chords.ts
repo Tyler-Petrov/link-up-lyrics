@@ -5,7 +5,6 @@
 import {
 	ChordQualities,
 	ChordRoots,
-	KeyModes,
 	MusicalKeys,
 	constantByTag,
 	type ConstantTag,
@@ -176,7 +175,10 @@ export function keyName(keyTag: MusicalKeyTag) {
 /** Reads a key the way it's written in ChordPro `{key: …}`: "G", "Eb", "F#m", "Cmin". */
 export function parseKey(text: string): MusicalKeyTag | undefined {
 	const note = parseNote(text.trim());
-	const mode = KeyModes.find((m) => [m.suffix, ...m.aliases].some((s) => s === note?.rest));
+	// A key's mode is written like a major or minor chord's quality.
+	const mode = qualitySpellings.find(
+		(q) => q.text === note?.rest && (q.tag === 'major' || q.tag === 'minor')
+	);
 	if (!note || !mode) return undefined;
 	return MusicalKeys.find(
 		(key) =>

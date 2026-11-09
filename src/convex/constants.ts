@@ -27,8 +27,8 @@ export type Spelling = 'sharp' | 'flat';
 /* `signatureShift` is how far round the circle of fifths the key signature sits from the root's major:  */
 /* A minor shares C major's signature, three fifths below A major's. That's why Cm spells like E♭.       */
 export const KeyModes = Object.freeze([
-	{ tag: 'major', name: 'Major', suffix: '', aliases: [], signatureShift: 0 },
-	{ tag: 'minor', name: 'Minor', suffix: 'm', aliases: ['min'], signatureShift: -3 }
+	{ tag: 'major', name: 'Major', suffix: '', signatureShift: 0 },
+	{ tag: 'minor', name: 'Minor', suffix: 'm', signatureShift: -3 }
 ] as const);
 
 /* A key IS a root, an accidental and a mode, so keys are derived: "c", "eFlat", "cSharpMinor". The flatMap */

@@ -1,0 +1,143 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Rich brown, two modes, dark first (plan §9). One warm, low-chroma hue scaled light → dark ("bark"), plus
+ * a few accents used sparingly: ember for chords, sage for success, clay for danger. The dark mode echoes
+ * the old app's Open Props "choco": page #3d210d, surfaces #572f12 / #703a13, text #fce1bc / #f7ca9e,
+ * brand #df8545.
+ */
+@theme {
+	--color-bark-50: oklch(0.972 0.01 70);
+	--color-bark-100: oklch(0.94 0.02 68);
+	--color-bark-200: oklch(0.885 0.034 66);
+	--color-bark-300: oklch(0.795 0.05 62);
+	--color-bark-400: oklch(0.68 0.068 58);
+	--color-bark-500: oklch(0.565 0.082 54);
+	--color-bark-600: oklch(0.47 0.078 50);
+	--color-bark-700: oklch(0.385 0.066 48);
+	--color-bark-800: oklch(0.305 0.052 46);
+	--color-bark-900: oklch(0.235 0.038 44);
+	--color-bark-950: oklch(0.165 0.026 42);
+
+	--color-choco-1: #fce1bc;
+	--color-choco-2: #f7ca9e;
+	--color-choco-7: #703a13;
+	--color-choco-8: #572f12;
+	--color-choco-9: #3d210d;
+	--color-brand: #df8545;
+
+	--color-ember-400: oklch(0.8 0.13 72);
+	--color-ember-600: oklch(0.52 0.15 55);
+	--color-sage-500: oklch(0.64 0.09 165);
+	--color-clay-500: oklch(0.62 0.14 25);
+
+	--font-chart: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
+}
+
+/* Semantic tokens (shadcn's names, so its components follow the palette). mode-watcher toggles .dark. */
+:root {
+	--radius: 0.875rem;
+	--background: var(--color-bark-50);
+	--foreground: var(--color-bark-950);
+	--card: oklch(0.99 0.006 75);
+	--card-foreground: var(--color-bark-950);
+	--popover: oklch(0.99 0.006 75);
+	--popover-foreground: var(--color-bark-950);
+	--primary: oklch(0.56 0.14 52);
+	--primary-foreground: var(--color-bark-50);
+	--secondary: var(--color-bark-100);
+	--secondary-foreground: var(--color-bark-900);
+	--muted: var(--color-bark-100);
+	--muted-foreground: var(--color-bark-600);
+	--accent: var(--color-bark-200);
+	--accent-foreground: var(--color-bark-950);
+	--destructive: var(--color-clay-500);
+	--success: var(--color-sage-500);
+	--border: oklch(0.385 0.066 48 / 12%);
+	--input: oklch(0.385 0.066 48 / 18%);
+	--ring: oklch(0.56 0.14 52 / 60%);
+	--chord: var(--color-ember-600);
+	--glow: oklch(0.56 0.14 52 / 25%);
+}
+
+.dark {
+	--background: var(--color-choco-9);
+	--foreground: var(--color-choco-1);
+	--card: var(--color-choco-8);
+	--card-foreground: var(--color-choco-1);
+	--popover: var(--color-choco-8);
+	--popover-foreground: var(--color-choco-1);
+	--primary: var(--color-brand);
+	--primary-foreground: #2a1608;
+	--secondary: var(--color-choco-7);
+	--secondary-foreground: var(--color-choco-1);
+	--muted: oklch(0.32 0.06 50);
+	--muted-foreground: oklch(0.86 0.06 65 / 75%);
+	--accent: var(--color-choco-7);
+	--accent-foreground: var(--color-choco-1);
+	--destructive: oklch(0.7 0.15 28);
+	--border: oklch(0.94 0.05 75 / 10%);
+	--input: oklch(0.94 0.05 75 / 14%);
+	--ring: oklch(0.72 0.14 55 / 60%);
+	--chord: var(--color-ember-400);
+	--glow: oklch(0.72 0.14 55 / 30%);
+}
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-success: var(--success);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-chord: var(--chord);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
+}
+
+@layer base {
+	* {
+		@apply border-border outline-ring/50;
+	}
+	html {
+		color-scheme: light;
+	}
+	html.dark {
+		color-scheme: dark;
+	}
+	body {
+		@apply bg-background text-foreground antialiased;
+	}
+	h1,
+	h2,
+	h3 {
+		text-wrap: balance;
+	}
+}
+
+@utility page-title {
+	@apply text-center text-4xl font-[750] tracking-tight sm:text-5xl;
+	text-shadow: 0 0 2rem var(--glow);
+}

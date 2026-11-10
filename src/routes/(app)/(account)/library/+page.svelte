@@ -72,7 +72,8 @@
 					</p>
 				</div>
 				{#if song.originalKeyTag}
-					<span class="rounded-lg bg-accent px-2 py-1 font-chart text-sm"
+					<!-- A tint of the text colour, so the pill shows on the card and on its hover colour alike. -->
+					<span class="rounded-lg bg-foreground/10 px-2 py-1 font-chart text-sm"
 						>{keyName(song.originalKeyTag)}</span
 					>
 				{/if}

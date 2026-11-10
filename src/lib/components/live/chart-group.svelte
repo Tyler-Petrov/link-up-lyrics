@@ -38,6 +38,7 @@
 
 <!-- One line group, as the leader advances through them live. Wraps ChartLine. -->
 {#if musicOnly}
+	<!-- Unnamed: the block's name is already the label above it. -->
 	<div
 		class={cn(
 			'flex items-center gap-3 rounded-2xl border border-dashed border-muted-foreground/40 bg-foreground/[0.035] px-5 py-4 text-muted-foreground',
@@ -45,12 +46,7 @@
 		)}
 	>
 		<AudioLines class="size-[1.2em] shrink-0 text-chord" />
-		<span class="flex flex-col">
-			<span class="font-semibold text-foreground">
-				{block.type === 'section' ? block.section.name : 'Interlude'}
-			</span>
-			<span class="text-[0.8em] italic">Music only</span>
-		</span>
+		<span class="italic">Music only</span>
 	</div>
 {:else}
 	<div class={cn('flex flex-col gap-1', className)}>

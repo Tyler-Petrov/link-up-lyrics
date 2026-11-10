@@ -250,9 +250,12 @@
 	/** A long line scrolls sideways; its right edge fades while there's more to see. */
 	const scroller = 'min-w-0 flex-1 scroll-fade overflow-x-auto overscroll-x-contain';
 	const pickerRow = 'w-max min-w-full font-chart text-base leading-snug sm:text-lg';
-	/* Taller on touch screens, so a thumb aimed above a letter lands in the lane and not in the words. */
+	/*
+	 * Taller on touch screens, so a thumb aimed above a letter lands in the lane and not in the words. A tick per
+	 * slot shows where chords go, but only on the line being edited (and under a mouse), so the song reads as words.
+	 */
 	const lane =
-		'relative h-6 rounded-md pointer-coarse:h-9 bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)]';
+		'relative h-6 rounded-md pointer-coarse:h-9 before:absolute before:inset-0 before:rounded-md before:bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)] before:opacity-0 before:transition-opacity group-focus-within/line:before:opacity-100 pointer-fine:group-hover/line:before:opacity-100';
 	/* As tall as the lane on touch, with the chord at its foot, so a chord is as easy to tap again. */
 	const chordPlace =
 		'absolute bottom-0 flex items-end rounded-md px-0.5 text-left leading-tight pointer-coarse:top-0';

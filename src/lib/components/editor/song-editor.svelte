@@ -181,6 +181,8 @@
 		/** Every line of a block: moving them all to a new block would only leave this one empty behind. */
 		const wholeBlock = block.type === 'section' && from === 0 && !after;
 		const groupCount = groupStarts ? `${groupStarts + 1} groups` : 'one group';
+		/** Inside a bigger group, which Group would split them out of: named by its number in the gutter. */
+		const within = groups.find((group) => group.lines.some((line) => line._id === first!._id))!;
 		return {
 			dragging: selection.dragging,
 			lines,
@@ -191,7 +193,7 @@
 			groupsLabel: wholeBlock
 				? `the whole block, ${groupCount}`
 				: groupMarks.length && !groupStarts
-					? 'part of a group'
+					? `part of group ${within.index + 1} (${within.lines.length} lines)`
 					: groupMarks.length || ungroupMarks.length
 						? groupCount
 						: 'the block’s only group',
@@ -296,10 +298,11 @@
 />
 
 <div class="flex flex-col gap-4">
-	<!-- Stays under the app header while you scroll, so whether your words are saved is always in view. -->
+	<!-- Stays under the app header while you scroll, so whether your words are saved is always in view. Solid, as
+	     the console's status card is, so the song scrolling under it never smudges the controls. -->
 	<div
 		bind:this={bar}
-		class="sticky-under-header z-30 -mx-2 flex items-center justify-between gap-3 rounded-2xl bg-background/85 p-2 backdrop-blur-md"
+		class="sticky-under-header z-30 -mx-2 flex items-center justify-between gap-3 rounded-2xl bg-background p-2"
 	>
 		<div
 			class="inline-flex rounded-2xl bg-card p-1 shadow-sm"

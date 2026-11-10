@@ -79,7 +79,7 @@
 	{@const { session, items, roleTag } = console_}
 	<a
 		href="/jams"
-		class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+		class="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground pointer-coarse:min-h-10"
 	>
 		<ArrowLeft class="size-4" /> Jams
 	</a>

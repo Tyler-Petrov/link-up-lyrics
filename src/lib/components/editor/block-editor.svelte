@@ -288,7 +288,8 @@
 						{#if isInterlude}
 							<AudioLines class="size-4" /> Music only. Singers see a card; add a chord line for players.
 						{:else}
-							No lines yet.
+							<!-- What the room gets for this step: live, a group with no lines is a Music only card. -->
+							No lines yet. Singers see a Music only card here.
 						{/if}
 					</p>
 				{/if}

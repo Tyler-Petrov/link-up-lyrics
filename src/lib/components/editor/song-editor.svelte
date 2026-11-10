@@ -178,20 +178,23 @@
 			.filter((line) => line.startsGroup)
 			.map(mark(false));
 		const groupStarts = rest.filter((line) => line.startsGroup).length;
+		/** Every line of a block: moving them all to a new block would only leave this one empty behind. */
+		const wholeBlock = block.type === 'section' && from === 0 && !after;
 		return {
 			dragging: selection.dragging,
 			lines,
 			/**
-			 * Says why Group or Ungroup is greyed out, on touch screens too (no tooltips there). One group with
-			 * nothing to merge into is the whole block.
+			 * Says why Group, Ungroup or Block is greyed out, on touch screens too (no tooltips there). One group
+			 * with nothing to merge into is the whole block.
 			 */
 			groupsLabel: groupMarks.length
 				? groupStarts
-					? `${groupStarts + 1} groups`
+					? `${wholeBlock ? 'the whole block, ' : ''}${groupStarts + 1} groups`
 					: 'part of a group'
 				: ungroupMarks.length
 					? 'one group'
 					: 'the block’s only group',
+			wholeBlock,
 			/** One group: its first line starts one, the line after it starts the next, none between. */
 			groupMarks,
 			ungroupMarks,
@@ -460,7 +463,10 @@
 			<button
 				type="button"
 				class={toolbarButton}
-				title="Move these lines into a new block of their own"
+				disabled={selected.wholeBlock}
+				title={selected.wholeBlock
+					? 'These lines are already the whole block: rename it instead'
+					: 'Move these lines into a new block of their own'}
 				onclick={makeBlock}
 			>
 				<SquarePlus class="size-4" /> <span class="max-sm:hidden">Make block</span><span

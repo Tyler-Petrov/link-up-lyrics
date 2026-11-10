@@ -2,8 +2,9 @@
  * Drag to reorder as an attachment, from Jairus (Beacon's model): `{@attach sortable({ onUpdate })}` on the parent
  * of a keyed {#each}, with `data-id` on each child. The callback runs with the drop still in the DOM, so it can
  * read where the item landed; then Sortable's own move is put back. Svelte stays the only thing that moves nodes:
- * the (optimistic) data change moves the item and animate:glide slides it there. A failed save rolls the data
- * back, so the list goes back by itself, and a toast says so.
+ * the (optimistic) data change moves the item. Children can use animate:glide: it holds still for the drop
+ * itself (Sortable already showed that move) and slides reorders that arrive any other way, like another
+ * leader's. A failed save rolls the data back, so the list goes back by itself, and a toast says so.
  */
 import Sortable, {
 	type SortableEvent,
@@ -26,6 +27,13 @@ type SortableOptions = Omit<SortableOptionsBase, 'onAdd' | 'onUpdate'> & {
 	onAdd?: (event: SortableUpdateEvent) => MaybePromise<void>;
 };
 
+/**
+ * The node the dragged item sat in front of when the drag started, to put it back exactly there: by index it
+ * would land after the {#each}'s trailing anchor when it was last, and Svelte's next reorder would then miss it.
+ * Shared by every list, since an item can be dropped into another list of its `group`.
+ */
+let startedBefore: Node | null = null;
+
 export function sortable(options: SortableOptions = {}): Attachment<HTMLElement> {
 	return (element) => {
 		const onDrop =
@@ -37,8 +45,12 @@ export function sortable(options: SortableOptions = {}): Attachment<HTMLElement>
 					.filter((id): id is string => !!id);
 				const saved = (async () => callback({ ...event, newIds }))();
 
-				event.item.remove();
-				event.from.insertBefore(event.item, event.from.children[event.oldIndex!] ?? null);
+				event.from.insertBefore(event.item, startedBefore);
+				// glide (#lib/motion) reads this: the reorder the callback causes lands before the next frame.
+				for (const list of new Set([event.from, event.to])) {
+					list.dataset.dropping = '';
+					requestAnimationFrame(() => delete list.dataset.dropping);
+				}
 
 				saved.catch((error) => {
 					console.error('Failed to save the new order', error);
@@ -59,6 +71,10 @@ export function sortable(options: SortableOptions = {}): Attachment<HTMLElement>
 			chosenClass: 'sortable-chosen',
 			dragClass: 'sortable-drag',
 			...options,
+			onStart: (event) => {
+				startedBefore = event.item.nextSibling;
+				options.onStart?.(event);
+			},
 			onUpdate: onDrop(options.onUpdate),
 			onAdd: onDrop(options.onAdd ?? options.onUpdate)
 		});

@@ -21,7 +21,7 @@
 </script>
 
 <Dialog.Root bind:open={form.state.open}>
-	<Button class="rounded-xl" onclick={() => form.resetOpen()}>
+	<Button class="h-10 rounded-xl px-4" onclick={() => form.resetOpen()}>
 		<Plus /> New jam session
 	</Button>
 	<Dialog.Content class="rounded-2xl">

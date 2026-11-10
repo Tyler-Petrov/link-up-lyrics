@@ -53,13 +53,17 @@
 </script>
 
 <!-- The strip above the floating header is the page, so words scrolling up vanish at the screen's edge rather than
-     showing cut off above it (sticky-under-header fills the gap below it the same way). -->
-<div aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-40 h-(--header-top) bg-background"></div>
+     showing cut off above it; page-corners does the same in the header's top corners (sticky-under-header fills the
+     gap below it the same way). -->
+<div
+	aria-hidden="true"
+	class="pointer-events-none fixed inset-x-0 top-0 z-40 h-(--header-top) bg-background"
+></div>
 
 <!-- A floating rounded card, like the old app's header. Named so it holds still while pages crossfade. Its place
      and height are the --header-* variables in app.css, which bars pinned under it go by. -->
 <header
-	class="sticky top-(--header-top) z-40 mx-auto flex h-(--header-height) w-[min(100%-1.5rem,64rem)] items-center gap-1.5 rounded-2xl bg-card/85 px-3 shadow-lg shadow-black/20 backdrop-blur-md [view-transition-name:header] sm:gap-4 sm:px-4"
+	class="page-corners sticky top-(--header-top) z-40 mx-auto flex h-(--header-height) w-[min(100%-1.5rem,64rem)] items-center gap-1.5 rounded-2xl bg-card/85 px-3 shadow-lg shadow-black/20 backdrop-blur-md [view-transition-name:header] sm:gap-4 sm:px-4"
 >
 	<!-- Like the toggle and avatar, 40px to tap on touch screens without taking more room. -->
 	<a

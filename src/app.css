@@ -169,21 +169,38 @@
 }
 
 /*
+ * Pinned chrome (the floating header, and bars pinned under it) floats over the page as it scrolls. Words scrolling
+ * up behind it vanish at its edge rather than peeking out around it: the cutouts at its rounded-2xl top corners are
+ * the page, and so is a strip --page-above tall over it. Painted behind the element's content (sticky gives the
+ * element the stacking context that needs).
+ */
+@utility page-corners {
+	&::before {
+		--r: var(--radius-2xl);
+		--outside: transparent calc(var(--r) - 1px), var(--background) var(--r);
+		content: '';
+		position: absolute;
+		z-index: -1;
+		inset-inline: 0;
+		bottom: calc(100% - var(--r));
+		height: calc(var(--page-above, 0px) + var(--r));
+		background:
+			linear-gradient(var(--background) 0 0) top / 100% var(--page-above, 0px) no-repeat,
+			radial-gradient(circle at 100% 100%, var(--outside)) bottom left / var(--r) var(--r) no-repeat,
+			radial-gradient(circle at 0 100%, var(--outside)) bottom right / var(--r) var(--r) no-repeat;
+	}
+}
+
+/*
  * A bar that stays in view under the header, like the editor's and the console's status card: pinned a small gap
  * below it, and the gap is filled with the page so words scrolling past never show between the two.
  */
 @utility sticky-under-header {
+	@apply page-corners;
 	--under-header-gap: 0.5rem;
+	--page-above: var(--under-header-gap);
 	position: sticky;
 	top: calc(var(--header-bottom) + var(--under-header-gap));
-	&::before {
-		content: '';
-		position: absolute;
-		inset-inline: 0;
-		bottom: 100%;
-		height: var(--under-header-gap);
-		background: var(--background);
-	}
 }
 
 /*

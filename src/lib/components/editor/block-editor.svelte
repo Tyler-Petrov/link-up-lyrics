@@ -252,17 +252,22 @@
 		{/if}
 	</header>
 
-	<div class="flex flex-col gap-1">
+	<!-- No gap between groups: grouping or ungrouping would open or close it all at once and jump the song.
+	     Alternate groups are tinted, and fade between the two when a change renumbers them. -->
+	<div class="flex flex-col">
 		{#each groups as group (group.key)}
 			{@const tinted = group.index % 2 === 0}
 			<div
-				class={cn('relative rounded-2xl', tinted ? 'bg-foreground/[0.035]' : 'bg-transparent')}
+				class={cn(
+					'relative rounded-2xl transition-colors',
+					tinted ? 'bg-foreground/[0.035]' : 'bg-transparent'
+				)}
 				animate:glide
 				{@attach !isRepeat && lineSortable}
 			>
 				<span
 					class={cn(
-						'pointer-events-none absolute top-1.5 left-1 flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold tabular-nums',
+						'pointer-events-none absolute top-1.5 left-1 flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold tabular-nums transition-colors',
 						tinted
 							? 'bg-muted-foreground text-background'
 							: 'bg-muted-foreground/45 text-foreground'
@@ -272,7 +277,7 @@
 				>
 				<div
 					class={cn(
-						'pointer-events-none absolute top-8 bottom-2 left-[0.8rem] w-1 rounded-full',
+						'pointer-events-none absolute top-8 bottom-2 left-[0.8rem] w-1 rounded-full transition-colors',
 						tinted ? 'bg-muted-foreground/70' : 'bg-muted-foreground/45'
 					)}
 				></div>

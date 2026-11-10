@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import WifiOff from '@lucide/svelte/icons/wifi-off';
 	import { api } from '#convex/_generated/api.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
@@ -13,10 +14,11 @@
 	import { createViewerSettings } from '#lib/components/live/viewer-settings.svelte.js';
 	import type { PageProps } from './$types';
 
-	let { params }: PageProps = $props();
+	let { data, params }: PageProps = $props();
 
 	const live = $derived(await convexQuery(api.live.watch, { jamSessionId: params.jamSessionId }));
-	const settings = createViewerSettings();
+	// This phone's choice as the page loads; from then on the settings sheet changes it.
+	const settings = createViewerSettings(untrack(() => data.viewer));
 
 	const isLive = $derived(live.state === 'live');
 	const groups = $derived(live.state === 'live' ? groupArrangement(live.blocks) : []);

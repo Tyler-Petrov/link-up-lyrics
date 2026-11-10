@@ -1,7 +1,7 @@
 /*
- * How one phone shows the live page. Stored on the device (localStorage), so a singer never needs an account.
+ * How one phone shows the live page. Saved on the device in cookies, so a singer never needs an account, and the
+ * server already renders the words in this phone's mode and size (from localStorage they'd swap in after load).
  */
-import { PersistedState } from 'runed';
 
 export const ViewModes = Object.freeze([
 	{ tag: 'current', name: 'Current group', description: 'Just what we’re singing now, large' },
@@ -19,24 +19,32 @@ export const TextSizes = Object.freeze([
 export type ViewModeTag = (typeof ViewModes)[number]['tag'];
 export type TextSizeTag = (typeof TextSizes)[number]['tag'];
 
-export function createViewerSettings() {
-	const mode = new PersistedState<ViewModeTag>('live:viewMode', 'current');
-	const size = new PersistedState<TextSizeTag>('live:textSize', 'm');
+/** The cookies the live page's server load reads for createViewerSettings. */
+export const ViewerCookies = Object.freeze({ mode: 'live-view-mode', size: 'live-text-size' });
+
+export function createViewerSettings(saved: { mode?: string; size?: string }) {
+	let mode = $state(saved.mode);
+	let size = $state(saved.size);
+	const save = (name: string, value: string) => {
+		document.cookie = `${name}=${value}; path=/; max-age=${60 * 60 * 24 * 400}; samesite=lax`;
+	};
 	return {
-		get mode() {
-			return ViewModes.some((m) => m.tag === mode.current) ? mode.current : 'current';
+		get mode(): ViewModeTag {
+			return ViewModes.find((m) => m.tag === mode)?.tag ?? 'current';
 		},
 		set mode(value: ViewModeTag) {
-			mode.current = value;
+			mode = value;
+			save(ViewerCookies.mode, value);
 		},
 		get size() {
-			return TextSizes.find((s) => s.tag === size.current) ?? TextSizes[1];
+			return TextSizes.find((s) => s.tag === size) ?? TextSizes[1];
 		},
 		get sizeTag() {
 			return this.size.tag;
 		},
 		set sizeTag(value: TextSizeTag) {
-			size.current = value;
+			size = value;
+			save(ViewerCookies.size, value);
 		}
 	};
 }

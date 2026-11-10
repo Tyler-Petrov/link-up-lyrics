@@ -139,7 +139,11 @@
 	<div class="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
 		<FocusStage {session} {items} />
 
-		<aside class="flex flex-col gap-6 lg:sticky lg:top-[9.5rem]">
+		<!-- Pinned beside the song, and scrolls on its own when taller than the screen, so the setlist at its top
+		     stays in view however far down the song the leader goes. The padding keeps the cards' shadows. -->
+		<aside
+			class="flex flex-col gap-6 lg:sticky lg:top-[9.5rem] lg:-mx-2 lg:max-h-[calc(100dvh-10.5rem)] lg:overflow-y-auto lg:px-2 lg:pb-2 lg:[scrollbar-width:thin]"
+		>
 			<!-- Below lg the setlist is a sheet from the Prev/Next bar, so the leader never scrolls past the song. -->
 			<section
 				class="flex flex-col gap-3 rounded-3xl bg-card p-3 shadow-sm shadow-black/10 max-lg:hidden"

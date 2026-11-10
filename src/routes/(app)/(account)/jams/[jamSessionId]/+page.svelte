@@ -141,9 +141,11 @@
 		<FocusStage {session} {items} />
 
 		<!-- Pinned beside the song, and scrolls on its own when taller than the screen, so the setlist at its top
-		     stays in view however far down the song the leader goes. The padding keeps the cards' shadows. -->
+		     stays in view however far down the song the leader goes. No taller than the screen less its top and the
+		     page's foot (the 11rem under the grid), so reaching the end of the page never pushes it up under the
+		     Live bar. The padding keeps the cards' shadows. -->
 		<aside
-			class="flex flex-col gap-6 lg:sticky lg:top-[9.5rem] lg:-mx-2 lg:max-h-[calc(100dvh-10.5rem)] lg:overflow-y-auto lg:px-2 lg:pb-2 lg:[scrollbar-width:thin]"
+			class="column flex flex-col gap-6 lg:sticky lg:top-[9.5rem] lg:-mx-2 lg:max-h-[calc(100dvh-20.5rem)] lg:[scrollbar-width:thin] lg:overflow-y-auto lg:px-2 lg:pb-2"
 		>
 			<!-- Below lg the setlist is a sheet from the Prev/Next bar, so the leader never scrolls past the song. -->
 			<section
@@ -187,3 +189,47 @@
 		</aside>
 	</div>
 {/if}
+
+<style>
+	/*
+	 * A card the column cuts off fades out at that edge, so it reads as more to scroll to rather than broken.
+	 * Scroll-driven, like the editor's long lines: no fade when everything fits, and none at an end it's scrolled to.
+	 */
+	@property --fade-top {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
+	@property --fade-bottom {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
+	@media (width >= 64rem) {
+		.column {
+			mask-image: linear-gradient(
+				transparent,
+				#000 var(--fade-top),
+				#000 calc(100% - var(--fade-bottom)),
+				transparent
+			);
+			animation: column-fade linear both;
+			animation-timeline: scroll(self);
+		}
+	}
+	@keyframes column-fade {
+		0% {
+			--fade-top: 0px;
+			--fade-bottom: 3rem;
+		}
+		10%,
+		90% {
+			--fade-top: 3rem;
+			--fade-bottom: 3rem;
+		}
+		100% {
+			--fade-top: 3rem;
+			--fade-bottom: 0px;
+		}
+	}
+</style>

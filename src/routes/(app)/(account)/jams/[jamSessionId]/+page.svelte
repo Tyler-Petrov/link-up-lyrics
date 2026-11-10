@@ -2,7 +2,6 @@
 	import { page } from '$app/state';
 	import { settled } from 'svelte';
 	import { useConvexClient } from 'convex-svelte';
-	import { ConvexError } from 'convex/values';
 	import { toast } from 'svelte-sonner';
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import Copy from '@lucide/svelte/icons/copy';
@@ -54,11 +53,7 @@
 			});
 			await settled(); // until the console shows the new state, so the button never flips back for a frame
 		} catch (error) {
-			toast.error(
-				error instanceof ConvexError && error.data === 'SUBSCRIPTION_REQUIRED'
-					? 'Going live needs a subscription. See your account page.'
-					: errorMessage(error, 'Couldn’t change the session. Try again.')
-			);
+			toast.error(errorMessage(error, 'Couldn’t change the session. Try again.'));
 		} finally {
 			settingLive = false;
 		}
@@ -100,7 +95,7 @@
 
 	<!-- Stays in view under the app header while the leader steps through a song: are we live, and who's here. -->
 	<div
-		class="sticky top-[4.5rem] z-20 mt-4 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-md shadow-black/15 sm:gap-5"
+		class="sticky-under-header z-20 mt-4 flex items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-md shadow-black/15 sm:gap-5"
 	>
 		{#if session.isLive}
 			<span class="flex min-w-[4.75rem] items-center gap-2 font-semibold text-live" in:appear>

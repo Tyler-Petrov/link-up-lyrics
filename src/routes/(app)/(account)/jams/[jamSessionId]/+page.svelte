@@ -12,7 +12,7 @@
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
 	import { errorMessage } from '#lib/errors.js';
-	import { appear, reveal } from '#lib/motion.js';
+	import { appear } from '#lib/motion.js';
 	import AddSongDialog from '#lib/components/jam/add-song-dialog.svelte';
 	import ConnectedCount from '#lib/components/jam/connected-count.svelte';
 	import FocusStage from '#lib/components/jam/focus-stage.svelte';
@@ -131,11 +131,9 @@
 			{/if}
 		</Button>
 	</div>
-	{#if roleTag === 'owner' && !session.isLive}
-		<!-- Its gap is padding inside the slide, so the line opens and closes without a jump. -->
-		<div class="pt-3" transition:reveal>
-			<HostingStatus class="w-full" />
-		</div>
+	{#if roleTag === 'owner'}
+		<!-- Stays while live, so going live never moves the song and the Prev/Next bar under the leader. -->
+		<HostingStatus class="mt-3 w-full" />
 	{/if}
 
 	<div class="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">

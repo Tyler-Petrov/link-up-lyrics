@@ -5,7 +5,6 @@
 	import type { ArrangementBlock } from '#lib/chart/index.js';
 	import { groupArrangement, hasChords } from '#lib/chart/index.js';
 	import ChartLine from './chart-line.svelte';
-	import { cn } from '#lib/utils.js';
 
 	type Props = {
 		blocks: ArrangementBlock[];
@@ -18,8 +17,8 @@
 	const groups = $derived(groupArrangement(blocks));
 </script>
 
-<!-- Read-only chart: blocks in play order, each split into its line groups (a rail in the gutter with
-     alternating tint), repeats rendered from their source. -->
+<!-- Read-only chart: blocks in play order, each split into its line groups (a bar in the gutter), repeats
+     rendered from their source. -->
 <div class="flex flex-col gap-8 print:gap-4">
 	{#each blocks as block, blockIndex (block.key)}
 		{@const blockGroups = groups.filter((group) => group.blockIndex === blockIndex)}
@@ -55,15 +54,12 @@
 						Music only
 					</div>
 				{:else}
-					<div class="flex flex-col gap-1">
+					<!-- Every group alike (a rounded bar beside it), so none looks picked out; the gap between them
+					     shows where one ends. -->
+					<div class="flex flex-col gap-3">
 						{#each blockGroups as group (group.key)}
 							<div
-								class={cn(
-									'flex flex-col gap-1 rounded-r-xl border-l-4 py-1 pl-3',
-									group.index % 2 === 0
-										? 'border-muted-foreground/50 bg-foreground/[0.035]'
-										: 'border-muted-foreground/20 bg-transparent'
-								)}
+								class="relative flex flex-col gap-1 pl-4 before:absolute before:inset-y-0.5 before:left-0 before:w-1 before:rounded-full before:bg-muted-foreground/30"
 							>
 								{#each group.lines as line (line._id)}
 									<ChartLine

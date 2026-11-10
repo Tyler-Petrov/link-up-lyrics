@@ -14,16 +14,19 @@
 		portalProps,
 		children,
 		showCloseButton = true,
+		overlayClass,
 		...restProps
 	}: WithoutChildrenOrChild<DialogPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof DialogPortal>>;
 		children: Snippet;
 		showCloseButton?: boolean;
+		/** For a sheet that should leave the page readable behind it, like the live view's settings. */
+		overlayClass?: string;
 	} = $props();
 </script>
 
 <DialogPortal {...portalProps}>
-	<DialogOverlay />
+	<DialogOverlay class={overlayClass} />
 	<DialogPrimitive.Content
 		bind:ref
 		data-slot="dialog-content"

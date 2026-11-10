@@ -60,7 +60,7 @@
 		{/if}
 	</section>
 
-	<section class="card-section flex flex-col gap-4">
+	<section class="card-section ends-in-status flex flex-col gap-4">
 		<header>
 			<h2 class="section-title">CCLI</h2>
 			<p class="section-lede">
@@ -84,11 +84,16 @@
 </div>
 
 <style>
+	/* The same rounding as the app's other panels (the band panel, the song chart). */
 	.card-section {
-		border-radius: 1rem;
+		border-radius: var(--radius-2xl);
 		background: var(--card);
 		padding: 1.25rem;
 		box-shadow: 0 1px 2px rgb(0 0 0 / 0.1);
+	}
+	/* The CCLI form ends in its reserved status row, which already reads as room under the input. */
+	.ends-in-status {
+		padding-bottom: 0.75rem;
 	}
 	.section-title {
 		font-size: 1.125rem;

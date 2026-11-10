@@ -103,7 +103,8 @@
 			</span>
 		{/if}
 		{#if live.state === 'live'}
-			<LiveSettings {settings} />
+			<!-- Arrives and leaves with the words, not a frame ahead of them. -->
+			<div transition:appear><LiveSettings {settings} /></div>
 		{/if}
 	</header>
 

@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
+	import { fade, fly } from 'svelte/transition';
 	import Check from '@lucide/svelte/icons/check';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
 	import Group from '@lucide/svelte/icons/group';
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Ungroup from '@lucide/svelte/icons/ungroup';
+	import WifiOff from '@lucide/svelte/icons/wifi-off';
 	import SquarePlus from '@lucide/svelte/icons/square-plus';
 	import Music from '@lucide/svelte/icons/music';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -18,6 +19,7 @@
 		ordersBetween,
 		type ArrangementBlock
 	} from '#lib/chart/index.js';
+	import { useConnection } from '#lib/connection.svelte.js';
 	import { appear, morph, ms, reveal } from '#lib/motion.js';
 	import { sortable } from '#lib/sortable.js';
 	import { cn } from '#lib/utils.js';
@@ -220,12 +222,17 @@
 		if (id) editor.focusLine(id, 0);
 	}
 
+	const connection = useConnection();
 	const statuses = {
 		saving: { icon: LoaderCircle, label: 'Saving…', class: 'animate-spin' },
+		/* Convex holds the changes and sends them once it reconnects. */
+		waiting: { icon: WifiOff, label: 'Waiting to save', class: '' },
 		saved: { icon: Check, label: 'Saved', class: '' },
 		failed: { icon: CircleAlert, label: 'Not saved', class: 'text-destructive' }
 	};
-	const status = $derived(statuses[editor.status]);
+	const status = $derived(
+		statuses[editor.status === 'saving' && connection.reconnecting ? 'waiting' : editor.status]
+	);
 
 	const toolbarButton =
 		'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-opacity enabled:hover:bg-accent disabled:opacity-40';
@@ -237,6 +244,10 @@
 	}}
 	onkeydown={(event) => {
 		if (event.key === 'Escape') editor.selection = null;
+	}}
+	onbeforeunload={(event) => {
+		// A reload or close would drop changes not yet saved (typing waits for a pause; offline, everything waits).
+		if (editor.status === 'saving') event.preventDefault();
 	}}
 />
 
@@ -273,10 +284,15 @@
 				</label>
 			{/each}
 		</div>
-		<!-- A fixed width, so the words changing never moves anything. -->
-		<p role="status" class="grid w-24 shrink-0 justify-items-end text-sm text-muted-foreground">
+		<!-- A fixed width, so the words changing never moves anything. The old words fade out before the new
+		     ones fade in, so the two never overlap. -->
+		<p role="status" class="grid w-32 shrink-0 justify-items-end text-sm text-muted-foreground">
 			{#key status}
-				<span class="col-start-1 row-start-1 inline-flex items-center gap-1.5" transition:appear>
+				<span
+					class="col-start-1 row-start-1 inline-flex items-center gap-1.5 whitespace-nowrap"
+					in:fade={{ delay: ms(150), duration: ms(150) }}
+					out:appear
+				>
 					<status.icon class={cn('size-4', status.class)} />
 					{status.label}
 				</span>

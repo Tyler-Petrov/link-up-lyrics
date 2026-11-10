@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { fade, fly } from 'svelte/transition';
 	import Check from '@lucide/svelte/icons/check';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -255,6 +256,24 @@
 			?.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'instant' : 'smooth' });
 	}
 
+	/** The bar with the mode switch and save status, which stays under the app header. */
+	let bar = $state<HTMLElement>();
+
+	/**
+	 * A mode change adds or takes away a chord lane above every line, which would slide the song past whoever is
+	 * reading it. The line in the middle of the screen (or the last, when the song ends above it) holds still
+	 * instead, inside the crossfade.
+	 */
+	async function setMode(mode: ChordEntryMode) {
+		const middle = (bar!.getBoundingClientRect().bottom + innerHeight) / 2;
+		const rows = [...document.querySelectorAll('[data-select-line]')];
+		const row = rows.find((row) => row.getBoundingClientRect().bottom >= middle) ?? rows.at(-1);
+		const top = row?.getBoundingClientRect().top ?? 0;
+		editor.setMode(mode);
+		await tick();
+		if (row) scrollBy({ top: row.getBoundingClientRect().top - top, behavior: 'instant' });
+	}
+
 	const toolbarButton =
 		'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-opacity enabled:hover:bg-accent disabled:opacity-40 pointer-coarse:min-h-10';
 </script>
@@ -275,6 +294,7 @@
 <div class="flex flex-col gap-4">
 	<!-- Stays under the app header while you scroll, so whether your words are saved is always in view. -->
 	<div
+		bind:this={bar}
 		class="sticky-under-header z-30 -mx-2 flex items-center justify-between gap-3 rounded-2xl bg-background/85 p-2 backdrop-blur-md"
 	>
 		<div
@@ -299,7 +319,7 @@
 						name="chord-entry-mode"
 						value={mode.value}
 						checked={editor.mode === mode.value}
-						onchange={() => morph(() => editor.setMode(mode.value))}
+						onchange={() => morph(() => setMode(mode.value))}
 					/>
 					{mode.label}
 				</label>

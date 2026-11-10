@@ -229,11 +229,12 @@
 							>(optional, for a slash chord like G/B)</span
 						>
 					</legend>
-					<div class="grid grid-cols-8 gap-1.5">
+					<!-- None is as wide as its word needs; the seven notes share the rest. -->
+					<div class="grid grid-cols-[auto_repeat(7,minmax(0,1fr))] gap-1.5">
 						<button
 							type="button"
 							class={cn(
-								'h-10 rounded-xl text-xs font-semibold transition-colors',
+								'h-10 rounded-xl px-3 text-xs font-semibold transition-colors',
 								!bassRootTag
 									? 'bg-primary text-primary-foreground'
 									: 'bg-secondary enabled:hover:bg-accent'

@@ -180,20 +180,21 @@
 		const groupStarts = rest.filter((line) => line.startsGroup).length;
 		/** Every line of a block: moving them all to a new block would only leave this one empty behind. */
 		const wholeBlock = block.type === 'section' && from === 0 && !after;
+		const groupCount = groupStarts ? `${groupStarts + 1} groups` : 'one group';
 		return {
 			dragging: selection.dragging,
 			lines,
 			/**
-			 * Says why Group, Ungroup or Block is greyed out, on touch screens too (no tooltips there). One group
-			 * with nothing to merge into is the whole block.
+			 * Says why Group, Ungroup or Block is greyed out, on touch screens too (no tooltips there). The whole
+			 * block always says so, as Block is greyed out then; a loose run all selected has nothing to merge into.
 			 */
-			groupsLabel: groupMarks.length
-				? groupStarts
-					? `${wholeBlock ? 'the whole block, ' : ''}${groupStarts + 1} groups`
-					: 'part of a group'
-				: ungroupMarks.length
-					? 'one group'
-					: 'the block’s only group',
+			groupsLabel: wholeBlock
+				? `the whole block, ${groupCount}`
+				: groupMarks.length && !groupStarts
+					? 'part of a group'
+					: groupMarks.length || ungroupMarks.length
+						? groupCount
+						: 'the block’s only group',
 			wholeBlock,
 			/** One group: its first line starts one, the line after it starts the next, none between. */
 			groupMarks,

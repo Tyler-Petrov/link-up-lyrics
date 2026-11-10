@@ -207,7 +207,10 @@
 							onclick={() => (qualityTag = option.tag)}
 						>
 							<span class="font-bold">{option.suffix || 'maj'}</span>
-							<span class="w-full px-1 text-[0.65rem] text-balance opacity-75">{option.name}</span>
+							<!-- One line, so every symbol sits at the same height: the longest name fits a 360px phone. -->
+							<span class="text-[0.65rem] tracking-tight whitespace-nowrap opacity-75"
+								>{option.name}</span
+							>
 						</button>
 					{/each}
 				</div>

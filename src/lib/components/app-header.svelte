@@ -52,6 +52,10 @@
 	};
 </script>
 
+<!-- The strip above the floating header is the page, so words scrolling up vanish at the screen's edge rather than
+     showing cut off above it (sticky-under-header fills the gap below it the same way). -->
+<div aria-hidden="true" class="pointer-events-none fixed inset-x-0 top-0 z-40 h-(--header-top) bg-background"></div>
+
 <!-- A floating rounded card, like the old app's header. Named so it holds still while pages crossfade. Its place
      and height are the --header-* variables in app.css, which bars pinned under it go by. -->
 <header

@@ -116,8 +116,8 @@
 						<p class="truncate text-xs text-muted-foreground">
 							{member.statusTag === 'invited'
 								? member.userId
-									? 'Invited, waiting on them'
-									: 'Invited, hasn’t signed up yet'
+									? 'Waiting on them'
+									: 'Hasn’t signed up yet'
 								: member.email}
 						</p>
 					</div>
@@ -151,8 +151,10 @@
 
 		{#if band.canManage}
 			{#if canInvite}
+				<!-- novalidate: the schema's messages show in the row under the field, not the browser's bubble. -->
 				<form
 					class="flex flex-col gap-1"
+					novalidate
 					onsubmit={form.onsubmit}
 					onfocusout={form.onfocusout}
 					oninput={form.oninput}

@@ -38,6 +38,8 @@
 		})
 	});
 
+	let content = $state<HTMLElement | null>(null);
+
 	/* Typed as text; the form holds the list. */
 	let songwriters = $state('');
 	function open() {
@@ -86,7 +88,17 @@
 	<Button variant="secondary" class="h-10 rounded-xl px-4" onclick={open}>
 		<Settings /> Details
 	</Button>
-	<Dialog.Content class="max-h-[92dvh] overflow-y-auto rounded-2xl sm:max-w-lg">
+	<!-- On a touch screen it opens without focusing Title, so the keyboard doesn't cover Key, Capo and the credits
+	     people usually come here for. -->
+	<Dialog.Content
+		bind:ref={content}
+		class="max-h-[92dvh] overflow-y-auto rounded-2xl sm:max-w-lg"
+		onOpenAutoFocus={(event) => {
+			if (!matchMedia('(pointer: coarse)').matches) return;
+			event.preventDefault();
+			content?.focus({ preventScroll: true });
+		}}
+	>
 		<Dialog.Header>
 			<Dialog.Title>Song details</Dialog.Title>
 			<Dialog.Description

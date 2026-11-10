@@ -36,9 +36,12 @@
 	const rows = $derived(range ? await convexQuery(api.ccli.usage, range) : []);
 
 	const shown = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' });
+	// "Not Specified" is no copyright info, so it's the same dash as any blank (the song page hides it too).
 	const copyright = (row: (typeof rows)[number]) =>
 		row.copyrightLine ??
-		(row.copyrightSourceTag ? constantByTag('CopyrightSources', row.copyrightSourceTag).name : '');
+		(row.copyrightSourceTag && row.copyrightSourceTag !== 'unknown'
+			? constantByTag('CopyrightSources', row.copyrightSourceTag).name
+			: '');
 
 	function downloadCsv() {
 		const cell = (value: string | undefined) => `"${(value ?? '').replaceAll('"', '""')}"`;
@@ -140,10 +143,10 @@
 												.join(' · ')}
 										</p>
 									</td>
-									<td class="hidden px-3 py-2 font-chart md:table-cell">
-										{#if row.ccliSongNumber}{row.ccliSongNumber}{:else}<span
-												class="text-muted-foreground">—</span
-											>{/if}
+									<!-- Only the number is in the chart font, so a blank is the same dash as Copyright's. -->
+									<td class="hidden px-3 py-2 md:table-cell">
+										{#if row.ccliSongNumber}<span class="font-chart">{row.ccliSongNumber}</span
+											>{:else}<span class="text-muted-foreground">—</span>{/if}
 									</td>
 									<td class="hidden px-3 py-2 text-muted-foreground md:table-cell"
 										>{copyright(row) || '—'}</td

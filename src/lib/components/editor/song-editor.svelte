@@ -20,7 +20,7 @@
 		type ArrangementBlock
 	} from '#lib/chart/index.js';
 	import { useConnection } from '#lib/connection.svelte.js';
-	import { appear, morph, ms, reveal } from '#lib/motion.js';
+	import { appear, morph, ms, reduced, reveal } from '#lib/motion.js';
 	import { sortable } from '#lib/sortable.js';
 	import { cn } from '#lib/utils.js';
 	import { Advanced } from '#lib/components/ui/advanced/index.js';
@@ -169,25 +169,31 @@
 			...rest.filter((line) => line.startsGroup).map(mark(false)),
 			...(after && !after.startsGroup ? [mark(true)(after)] : [])
 		];
+		/**
+		 * Merged into one neighbouring group: the one above, or at the top of a block the one below.
+		 * Ungrouping [C D] in [A B][C D][E F] gives [A B C D][E F]. A block's first line always starts one.
+		 */
+		const ungroupMarks = [...(from > 0 ? lines : rest), ...(from === 0 && after ? [after] : [])]
+			.filter((line) => line.startsGroup)
+			.map(mark(false));
 		const groupStarts = rest.filter((line) => line.startsGroup).length;
 		return {
 			dragging: selection.dragging,
 			lines,
-			/** Says why Group or Ungroup is greyed out, on touch screens too (no tooltips there). */
-			groupsLabel: !groupMarks.length
-				? 'one group'
-				: groupStarts
+			/**
+			 * Says why Group or Ungroup is greyed out, on touch screens too (no tooltips there). One group with
+			 * nothing to merge into is the whole block.
+			 */
+			groupsLabel: groupMarks.length
+				? groupStarts
 					? `${groupStarts + 1} groups`
-					: 'part of a group',
+					: 'part of a group'
+				: ungroupMarks.length
+					? 'one group'
+					: 'the block’s only group',
 			/** One group: its first line starts one, the line after it starts the next, none between. */
 			groupMarks,
-			/**
-			 * Merged into one neighbouring group: the one above, or at the top of a block the one below.
-			 * Ungrouping [C D] in [A B][C D][E F] gives [A B C D][E F]. A block's first line always starts one.
-			 */
-			ungroupMarks: [...(from > 0 ? lines : rest), ...(from === 0 && after ? [after] : [])]
-				.filter((line) => line.startsGroup)
-				.map(mark(false)),
+			ungroupMarks,
 			atBlockTop: from === 0
 		};
 	});
@@ -234,8 +240,23 @@
 		statuses[editor.status === 'saving' && connection.reconnecting ? 'waiting' : editor.status]
 	);
 
+	/**
+	 * The toolbar covers the bottom of the screen, where a drag down a phone usually ends, so once it shows the
+	 * last selected line scrolls up above it (rows keep a bottom scroll margin of the toolbar's height).
+	 */
+	function keepSelectionInView() {
+		const selection = editor.selection;
+		if (!selection) return;
+		const last = Math.max(selection.anchor, selection.focus);
+		document
+			.querySelector(
+				`[data-block-key="${CSS.escape(selection.blockKey)}"][data-select-line="${last}"]`
+			)
+			?.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'instant' : 'smooth' });
+	}
+
 	const toolbarButton =
-		'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-opacity enabled:hover:bg-accent disabled:opacity-40';
+		'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium transition-opacity enabled:hover:bg-accent disabled:opacity-40 pointer-coarse:min-h-10';
 </script>
 
 <svelte:window
@@ -377,6 +398,7 @@
 	<div
 		class="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-3"
 		transition:fly={{ y: 24, duration: ms(180) }}
+		{@attach keepSelectionInView}
 	>
 		<!-- On a phone the count gets a row of its own above the buttons, so all of it fits. -->
 		<div
@@ -427,7 +449,7 @@
 			</button>
 			<button
 				type="button"
-				class="rounded-xl p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+				class="grid place-items-center rounded-xl p-2 text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:size-10"
 				aria-label="Clear selection"
 				onclick={() => (editor.selection = null)}
 			>

@@ -285,7 +285,7 @@
 					{@const index = lineIndex.get(line._id)!}
 					<div
 						class={cn(
-							'group/row flex min-h-9 items-stretch rounded-xl transition-colors',
+							'group/row flex min-h-9 scroll-mb-28 items-stretch rounded-xl transition-colors',
 							isSelected(index) && 'bg-primary/25'
 						)}
 						data-select-line={index}

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import { reveal } from '#lib/motion.js';
+	import { reduced, reveal } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 
 	/*
@@ -24,7 +24,7 @@
 <div class={cn('grid justify-items-start', className)}>
 	<button
 		type="button"
-		class="-mx-1 flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+		class="-mx-1 flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground transition-colors hover:text-foreground pointer-coarse:min-h-10"
 		aria-expanded={open}
 		aria-controls={id}
 		onclick={() => (open = !open)}
@@ -33,8 +33,18 @@
 		<ChevronDown class={cn('size-3.5 transition-transform duration-200', open && 'rotate-180')} />
 	</button>
 
+	<!-- Once open, the whole disclosure scrolls into view, so one opened near the bottom shows what it opened. -->
 	{#if open}
-		<div {id} class="grid gap-3 justify-self-stretch pt-3" transition:reveal>
+		<div
+			{id}
+			class="grid gap-3 justify-self-stretch pt-3"
+			transition:reveal
+			onintroend={(event) =>
+				event.currentTarget.parentElement?.scrollIntoView({
+					block: 'nearest',
+					behavior: reduced() ? 'instant' : 'smooth'
+				})}
+		>
 			{@render children()}
 		</div>
 	{/if}

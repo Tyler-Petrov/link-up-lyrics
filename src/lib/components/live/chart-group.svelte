@@ -26,11 +26,13 @@
 		class: className
 	}: Props = $props();
 
-	// Singers get a card for an interlude, and so do players when it carries no chords. §9.
+	// Singers get a card for an interlude, and so do players when it carries no chords. §9. So does a block with
+	// no lines yet: a step with nothing to sing says so, instead of a blank screen.
 	const musicOnly = $derived(
-		block.type === 'section' &&
-			block.source.kindTag === 'interlude' &&
-			(!showChords || !lines.some((line) => hasChords(line.characters)))
+		!lines.length ||
+			(block.type === 'section' &&
+				block.source.kindTag === 'interlude' &&
+				(!showChords || !lines.some((line) => hasChords(line.characters))))
 	);
 </script>
 

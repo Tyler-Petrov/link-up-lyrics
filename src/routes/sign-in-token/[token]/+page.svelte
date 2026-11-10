@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { useClerkContext } from 'svelte-clerk/client';
-	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import { Button } from '#lib/components/ui/button/index.js';
+	import { Spinner } from '#lib/components/ui/spinner/index.js';
 
 	// Redeems a sign-in link from scripts/sign-in.mjs (a Clerk sign-in token), then goes on to where the link
 	// points (?url=, only ever on this site). From meal-tracker / Jairus. Dev only: tokens come from the dev
@@ -59,7 +59,7 @@
 		</div>
 	{:else}
 		<p class="flex items-center gap-2 text-lg text-muted-foreground">
-			<LoaderCircle class="size-5 animate-spin" /> Signing in…
+			<Spinner class="size-5" /> Signing in…
 		</p>
 	{/if}
 </main>

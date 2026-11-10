@@ -4,9 +4,10 @@
 	import type { Spelling } from '#convex/constants.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
 	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
-	import { appear, ms, reduced } from '#lib/motion.js';
+	import { appear, ms } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 	import ChartGroupView from './chart-group.svelte';
+	import { follow } from './follow.js';
 	import { TextSizes, type ViewerSettings } from './viewer-settings.svelte.js';
 
 	type Props = {
@@ -94,41 +95,39 @@
 {/snippet}
 
 <!--
-	Changes cross-fade in place: old and new share one grid cell, so nothing below them jumps while both are
-	on screen. Keyed on focusedEpoch + group index, so re-focusing the same group still reads as a change.
+	Changes hand off in place: old and new share one grid cell, so nothing below them jumps, and the new group
+	waits for the old one to fade out, so their words never print over each other. Keyed on focusedEpoch + group
+	index, so re-focusing the same group still reads as a change.
 -->
 <!-- Switching view mode fades the stage in again, rather than swapping it in one frame. -->
 {#key settings.mode}
 	<div in:appear>
 		{#if settings.mode === 'song'}
-			<div class="flex flex-col gap-2 pb-[40vh] text-left">
-				{#each groups as item (item.key)}
-					{@const isCurrent = item.index === index}
-					{#if opensBlock(item) && blockName(item)}
-						<p
-							class="mt-6 px-4 text-xs font-semibold tracking-[0.18em] text-muted-foreground/70 uppercase first:mt-0"
+			<!-- Another song fades in, rather than swapping in one frame. -->
+			{#key itemId}
+				<div class="flex flex-col gap-2 pb-[40vh] text-left" in:appear>
+					{#each groups as item (item.key)}
+						{@const isCurrent = item.index === index}
+						{#if opensBlock(item) && blockName(item)}
+							<p
+								class="mt-6 px-4 text-xs font-semibold tracking-[0.18em] text-muted-foreground/70 uppercase first:mt-0"
+							>
+								{blockName(item)}
+							</p>
+						{/if}
+						<div
+							class={cn(
+								'rounded-3xl border-l-4 px-4 py-3 transition-[opacity,background-color,border-color] duration-500',
+								isCurrent ? 'border-primary bg-card opacity-100' : 'border-transparent opacity-35'
+							)}
+							aria-current={isCurrent ? 'step' : undefined}
+							{@attach follow(isCurrent && following, 'center')}
 						>
-							{blockName(item)}
-						</p>
-					{/if}
-					<div
-						class={cn(
-							'rounded-3xl border-l-4 px-4 py-3 transition-[opacity,background-color,border-color] duration-500',
-							isCurrent ? 'border-primary bg-card opacity-100' : 'border-transparent opacity-35'
-						)}
-						aria-current={isCurrent ? 'step' : undefined}
-						{@attach (element) => {
-							if (isCurrent && following)
-								element.scrollIntoView({
-									block: 'center',
-									behavior: reduced() ? 'instant' : 'smooth'
-								});
-						}}
-					>
-						{@render group(item, cn(settings.size.class, 'font-sans font-semibold leading-snug'))}
-					</div>
-				{/each}
-			</div>
+							{@render group(item, cn(settings.size.class, 'font-sans font-semibold leading-snug'))}
+						</div>
+					{/each}
+				</div>
+			{/key}
 
 			{#if !following}
 				<!-- Floats just above the progress bar, so it never moves the words. -->
@@ -151,8 +150,8 @@
 					{#key `${focusedEpoch}:${index}`}
 						<div
 							class="col-start-1 row-start-1 flex min-w-0 flex-col items-center gap-4"
-							in:fly={{ y: 12, duration: ms(320), delay: ms(80) }}
-							out:fade={{ duration: ms(160) }}
+							in:fly={{ y: 12, duration: ms(320), delay: ms(120) }}
+							out:fade={{ duration: ms(120) }}
 						>
 							{#if blockName(current)}
 								<p class="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">

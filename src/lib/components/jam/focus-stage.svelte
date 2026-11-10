@@ -7,8 +7,9 @@
 	import { api } from '#convex/_generated/api.js';
 	import { groupArrangement, keySpelling, type ChartGroup } from '#lib/chart/index.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
-	import { appear, reduced } from '#lib/motion.js';
+	import { appear } from '#lib/motion.js';
 	import ChartGroupView from '#lib/components/live/chart-group.svelte';
+	import { follow } from '#lib/components/live/follow.js';
 	import * as Dialog from '#lib/components/ui/dialog/index.js';
 	import { cn } from '#lib/utils.js';
 	import AddSongDialog from './add-song-dialog.svelte';
@@ -62,7 +63,11 @@
 		<!-- A fresh subtree per setlist item, which fades in once its song has loaded. -->
 		{#key item._id}
 			<div class="flex flex-col gap-4" in:appear>
-				<header class="flex items-baseline justify-between gap-3 px-1">
+				<!-- A song's first group brings its title into view too, so the leader sees which song the room moved to. -->
+				<header
+					class="flex scroll-mt-40 items-baseline justify-between gap-3 px-1"
+					{@attach follow(groupIndex === 0)}
+				>
 					<h2 class="truncate text-xl font-bold">{item.song.title}</h2>
 					<span class="shrink-0 text-sm text-muted-foreground tabular-nums">
 						Group {groupIndex + 1} of {groups.length}
@@ -89,7 +94,7 @@
 	<!-- Thumb reach on a phone, under the chart on a laptop. Always here, so it never blinks between songs. -->
 	<div
 		class={[
-			'fixed inset-x-0 bottom-0 z-30 grid grid-cols-[4rem_1fr_1fr] gap-3 bg-gradient-to-t from-background from-60% to-transparent px-4 pt-8 pb-[max(1rem,env(safe-area-inset-bottom))] lg:sticky lg:bottom-4 lg:grid-cols-2 lg:rounded-3xl lg:px-0 lg:pt-4 lg:pb-0',
+			'fixed inset-x-0 bottom-0 z-30 grid grid-cols-[4rem_1fr_1fr] gap-3 bg-gradient-to-t from-background from-60% to-transparent px-4 pt-8 pb-[max(1rem,env(safe-area-inset-bottom))] lg:sticky lg:bottom-4 lg:grid-cols-2 lg:rounded-3xl lg:bg-background/85 lg:bg-none lg:p-2 lg:backdrop-blur-md',
 			!items.length && 'lg:hidden'
 		]}
 	>
@@ -171,10 +176,7 @@
 					itemId: item!._id,
 					groupIndex: group.index
 				})}
-			{@attach (element) => {
-				if (isCurrent)
-					element.scrollIntoView({ block: 'nearest', behavior: reduced() ? 'instant' : 'smooth' });
-			}}
+			{@attach follow(isCurrent && group.index > 0)}
 		>
 			<ChartGroupView
 				{block}

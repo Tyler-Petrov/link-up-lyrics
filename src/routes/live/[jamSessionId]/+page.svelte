@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { fade, fly } from 'svelte/transition';
 	import WifiOff from '@lucide/svelte/icons/wifi-off';
 	import { api } from '#convex/_generated/api.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
 	import { groupArrangement, keySpelling } from '#lib/chart/index.js';
 	import { useConnection } from '#lib/connection.svelte.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
-	import { appear, ms } from '#lib/motion.js';
+	import { appear } from '#lib/motion.js';
 	import LivePresence from '#lib/components/live/live-presence.svelte';
 	import LiveSettings from '#lib/components/live/live-settings.svelte';
 	import LiveStage from '#lib/components/live/live-stage.svelte';
@@ -20,27 +19,11 @@
 	const settings = createViewerSettings();
 
 	const isLive = $derived(live.state === 'live');
-	const focusedItemId = $derived(live.state === 'live' ? live.focusedItemId : undefined);
-	const title = $derived(live.state === 'live' ? live.song.title : undefined);
 	const groups = $derived(live.state === 'live' ? groupArrangement(live.blocks) : []);
 	// The song may have lost groups since the leader focused one.
 	const groupIndex = $derived(
 		live.state === 'live' ? Math.max(0, Math.min(live.focusedGroupIndex, groups.length - 1)) : 0
 	);
-
-	/* "Now: <title>" for a few seconds when the leader moves to another song (not on first load). */
-	let nowTitle = $state<string>();
-	let shownItemId: string | undefined;
-	let nowTimer: ReturnType<typeof setTimeout> | undefined;
-	$effect(() => {
-		if (!focusedItemId || focusedItemId === shownItemId) return;
-		const isFirst = shownItemId === undefined;
-		shownItemId = focusedItemId;
-		if (isFirst) return;
-		nowTitle = title;
-		clearTimeout(nowTimer);
-		nowTimer = setTimeout(() => (nowTitle = undefined), 3500);
-	});
 
 	/* Live at some point on this visit: going offline after that is the end of the jam, not "not live yet". */
 	let wasLive = $state(false);
@@ -108,18 +91,6 @@
 		{/if}
 	</header>
 
-	{#if nowTitle}
-		<div class="pointer-events-none fixed inset-x-0 top-16 z-30 flex justify-center px-4">
-			<p
-				class="max-w-full truncate rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/30"
-				in:fly={{ y: -12, duration: ms(250) }}
-				out:fade={{ duration: ms(300) }}
-			>
-				Now: {nowTitle}
-			</p>
-		</div>
-	{/if}
-
 	<!-- Each state fades in as it arrives: not live yet, picking a song, the words, the end. -->
 	{#key live.state}
 		<main
@@ -136,6 +107,7 @@
 			{#if live.state === 'live'}
 				<LiveStage
 					focusedItemId={live.focusedItemId}
+					title={live.song.title}
 					blocks={live.blocks}
 					{groups}
 					{groupIndex}
@@ -145,7 +117,8 @@
 					spelling={keySpelling(live.song.originalKeyTag, live.transposeSemitones)}
 					{settings}
 				/>
-				<!-- At the foot of the screen, so a group changing size never moves them. -->
+				<!-- At the foot of the screen, so a group changing size doesn't move them (one taller than the screen
+				     pushes them down, after its words). -->
 				<SongCredits
 					copyrightLine={live.song.copyrightLine}
 					ccliSongNumber={live.song.ccliSongNumber}

@@ -13,6 +13,8 @@
 	type Props = {
 		/** The setlist item on screen; moving to another one follows the current group again. */
 		focusedItemId: Id<'JamSessionItem'>;
+		/** Its song's title, which a chip names for a few seconds when the leader moves to another song. */
+		title: string;
 		blocks: ArrangementBlock[];
 		/** groupArrangement(blocks), and the focused group's index already clamped to them (the page owns both). */
 		groups: ChartGroup[];
@@ -25,6 +27,7 @@
 	};
 	let {
 		focusedItemId,
+		title,
 		blocks,
 		groups,
 		groupIndex: index,
@@ -74,6 +77,20 @@
 		intentAt = -Infinity; // the drag, wheel turn or Space just before this press wasn't a scroll away
 		following = true; // the current group's attachment scrolls to it
 	}
+
+	/* "Now: <title>" for a few seconds when the leader moves to another song (not on first load). */
+	let nowTitle = $state<string>();
+	let shownItemId: string | undefined;
+	let nowTimer: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		if (itemId === shownItemId) return;
+		const isFirst = shownItemId === undefined;
+		shownItemId = itemId;
+		if (isFirst) return;
+		nowTitle = title;
+		clearTimeout(nowTimer);
+		nowTimer = setTimeout(() => (nowTitle = undefined), 3500);
+	});
 </script>
 
 <svelte:window
@@ -128,45 +145,41 @@
 					{/each}
 				</div>
 			{/key}
-
-			{#if !following}
-				<!-- Floats just above the progress bar, so it never moves the words. -->
-				<div
-					class="pointer-events-none fixed inset-x-0 bottom-[calc(2.75rem+env(safe-area-inset-bottom))] z-30 flex justify-center"
-				>
-					<button
-						type="button"
-						class="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/40 transition-transform active:scale-95"
-						onclick={jumpToCurrent}
-						transition:fly={{ y: 16, duration: ms(200) }}
-					>
-						<LocateFixed class="size-4" /> Jump to current
-					</button>
-				</div>
-			{/if}
 		{:else if current}
 			<div class="flex flex-col items-center gap-8 text-center">
-				<div class="grid w-full grid-cols-1">
-					{#key `${focusedEpoch}:${index}`}
-						<div
-							class="col-start-1 row-start-1 flex min-w-0 flex-col items-center gap-4"
-							in:fly={{ y: 12, duration: ms(320), delay: ms(120) }}
-							out:fade={{ duration: ms(120) }}
-						>
-							{#if blockName(current)}
-								<p class="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-									{blockName(current)}
-								</p>
-							{/if}
-							{@render group(
-								current,
-								cn(
-									settings.size.class,
-									'justify-center text-center font-sans font-semibold leading-snug'
-								)
-							)}
-						</div>
-					{/key}
+				<div class="flex w-full flex-col items-center gap-4">
+					<!-- The block's name changes only with the block, so it holds still while a verse steps on. Its line is
+					     always there, so a block without a name doesn't move the words. -->
+					<p
+						class="grid h-4 w-full justify-items-center text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase"
+					>
+						{#key blockName(current)}
+							<span
+								class="col-start-1 row-start-1"
+								in:fade={{ duration: ms(320), delay: ms(120) }}
+								out:fade={{ duration: ms(120) }}
+							>
+								{blockName(current) ?? ''}
+							</span>
+						{/key}
+					</p>
+					<div class="grid w-full grid-cols-1">
+						{#key `${focusedEpoch}:${index}`}
+							<div
+								class="col-start-1 row-start-1 flex min-w-0 flex-col items-center"
+								in:fly={{ y: 12, duration: ms(320), delay: ms(120) }}
+								out:fade={{ duration: ms(120) }}
+							>
+								{@render group(
+									current,
+									cn(
+										settings.size.class,
+										'justify-center text-center font-sans font-semibold leading-snug'
+									)
+								)}
+							</div>
+						{/key}
+					</div>
 				</div>
 
 				{#if settings.mode === 'next'}
@@ -180,6 +193,14 @@
 							>
 								{#if next}
 									<div class="h-px w-16 rounded-full bg-muted-foreground/40"></div>
+									<!-- Named when it starts another block: the verse's last group, then the chorus. -->
+									{#if opensBlock(next) && blockName(next)}
+										<p
+											class="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase"
+										>
+											{blockName(next)}
+										</p>
+									{/if}
 									{@render group(
 										next,
 										cn(smallerSize, 'justify-center text-center font-sans leading-snug')
@@ -193,3 +214,31 @@
 		{/if}
 	</div>
 {/key}
+
+<!--
+	Floats just above the progress bar, so it never moves the words and stays off the top of a new song: Jump to
+	current once the singer has scrolled away in Whole song, otherwise the new song's title for a few seconds. One
+	cell, so they swap in place.
+-->
+<div
+	class="pointer-events-none fixed inset-x-0 bottom-[calc(2.75rem+env(safe-area-inset-bottom))] z-30 grid items-end justify-items-center px-4 *:col-start-1 *:row-start-1"
+>
+	{#if settings.mode === 'song' && !following}
+		<button
+			type="button"
+			class="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/40 transition-transform active:scale-95"
+			onclick={jumpToCurrent}
+			transition:fly={{ y: 16, duration: ms(200) }}
+		>
+			<LocateFixed class="size-4" /> Jump to current
+		</button>
+	{:else if nowTitle}
+		<p
+			class="max-w-full truncate rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/40"
+			in:fly={{ y: 16, duration: ms(250) }}
+			out:fade={{ duration: ms(300) }}
+		>
+			Now: {nowTitle}
+		</p>
+	{/if}
+</div>

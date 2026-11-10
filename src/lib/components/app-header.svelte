@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { tick } from 'svelte';
 	import { crossfade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { navigating, page } from '$app/state';
@@ -8,12 +7,12 @@
 	import Moon from '@lucide/svelte/icons/moon';
 	import Sun from '@lucide/svelte/icons/sun';
 	import Music from '@lucide/svelte/icons/music-4';
-	import CreditCard from '@lucide/svelte/icons/credit-card';
+	import CircleUserRound from '@lucide/svelte/icons/circle-user-round';
 	import WifiOff from '@lucide/svelte/icons/wifi-off';
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { getAccount } from '#lib/account.svelte.js';
 	import { useConnection } from '#lib/connection.svelte.js';
-	import { appear, ms, reduced } from '#lib/motion.js';
+	import { appear, morph, ms } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 	import InvitationBadge from '#lib/components/band/invitation-badge.svelte';
 
@@ -39,20 +38,30 @@
 	});
 
 	// The whole page crossfades between light and dark, rather than each colour snapping.
-	function switchMode() {
-		if (reduced() || !document.startViewTransition) return toggleMode();
-		document.startViewTransition(async () => {
-			toggleMode();
-			await tick();
-		});
-	}
+	const switchMode = () => morph(toggleMode);
+
+	// Signed in, the library is home. Signing in from the sales page goes there; anywhere else it carries on.
+	const home = $derived(account.isSignedIn ? '/library' : '/');
+	const afterSignIn = $derived(page.url.pathname === '/' ? '/library' : undefined);
+
+	// Clerk's avatar is 28px: on touch screens its button reaches 40px to tap without taking more room.
+	const userButtonAppearance = {
+		elements: {
+			userButtonTrigger: { '@media (pointer: coarse)': { padding: '6px', margin: '-6px' } }
+		}
+	};
 </script>
 
-<!-- A floating rounded card, like the old app's header. Named so it holds still while pages crossfade. -->
+<!-- A floating rounded card, like the old app's header. Named so it holds still while pages crossfade. Its place
+     and height are the --header-* variables in app.css, which bars pinned under it go by. -->
 <header
-	class="sticky top-3 z-40 mx-auto flex w-[min(100%-1.5rem,64rem)] items-center gap-1.5 rounded-2xl bg-card/85 px-3 py-2 shadow-lg shadow-black/20 backdrop-blur-md [view-transition-name:header] sm:gap-4 sm:px-4"
+	class="sticky top-(--header-top) z-40 mx-auto flex h-(--header-height) w-[min(100%-1.5rem,64rem)] items-center gap-1.5 rounded-2xl bg-card/85 px-3 shadow-lg shadow-black/20 backdrop-blur-md [view-transition-name:header] sm:gap-4 sm:px-4"
 >
-	<a href="/" class="flex shrink-0 items-center gap-2 rounded-lg font-[750] tracking-tight">
+	<a
+		href={home}
+		aria-label="Link Up Lyrics"
+		class="flex shrink-0 items-center gap-2 rounded-lg font-[750] tracking-tight"
+	>
 		<!-- The mark is always the dark tile with an amber note, like the favicon: music, not a control. -->
 		<span class="dark grid size-8 place-items-center rounded-xl bg-secondary text-chord">
 			<Music class="size-4" />
@@ -61,7 +70,8 @@
 	</a>
 
 	{#if account.isSignedIn}
-		<!-- Tight on phones so all three fit beside the controls; it scrolls only as a last resort. -->
+		<!-- Tight on phones so all three fit beside the controls; it scrolls only as a last resort. On touch
+		     screens each link is 40px tall to tap, with the pill still 32px. -->
 		<nav class="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto sm:gap-1">
 			{#each links as link (link.href)}
 				{@const active = isActive(link)}
@@ -69,13 +79,13 @@
 					href={link.href}
 					aria-current={active ? 'page' : undefined}
 					class={cn(
-						'relative isolate shrink-0 rounded-xl px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground max-[380px]:text-[0.8125rem] sm:px-3',
+						'relative isolate shrink-0 rounded-xl px-2 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground max-[380px]:text-[0.8125rem] sm:px-3 pointer-coarse:py-2.5',
 						active && 'text-foreground'
 					)}
 				>
 					{#if active}
 						<span
-							class="absolute inset-0 -z-10 rounded-xl bg-accent"
+							class="absolute inset-0 -z-10 rounded-xl bg-accent pointer-coarse:inset-y-1"
 							in:receive={{ key: 'active' }}
 							out:send={{ key: 'active' }}
 						></span>
@@ -91,28 +101,37 @@
 		<div class="flex-1"></div>
 	{/if}
 
+	<!-- Like the avatar, 40px to tap on touch screens without taking more room. -->
 	<Button
 		variant="ghost"
 		size="icon"
 		onclick={switchMode}
 		aria-label="Switch between light and dark"
-		class="rounded-xl"
+		class="rounded-xl pointer-coarse:-mx-1"
 	>
 		<Sun class="hidden dark:block" />
 		<Moon class="dark:hidden" />
 	</Button>
 
-	<!-- Fixed size so the header doesn't jump while Clerk loads the avatar. -->
-	<div class="grid h-8 min-w-8 shrink-0 place-items-center">
+	<!-- Fixed size so the header doesn't jump while Clerk loads the avatar, which covers a placeholder circle. -->
+	<div class="grid h-8 min-w-8 shrink-0 place-items-center *:[grid-area:1/1]">
 		{#if account.isSignedIn}
-			<UserButton>
+			<span class="size-7 rounded-full bg-muted"></span>
+			<UserButton appearance={userButtonAppearance}>
+				<!-- One name per place: Account is the app's page (plan, CCLI number, usage report); Clerk's own
+				     item, renamed in the root layout, is sign-in and profile. -->
 				<UserButton.MenuItems>
-					<!-- /account: plan, CCLI number and usage report. Clerk's own item manages sign-in. -->
-					<UserButton.Link label="Plan & CCLI" href="/account" labelIcon={accountIcon} />
+					<UserButton.Link label="Account" href="/account" labelIcon={accountIcon} />
+					<UserButton.Action label="manageAccount" />
 				</UserButton.MenuItems>
 			</UserButton>
 		{:else}
-			<SignInButton mode="modal" asChild>
+			<SignInButton
+				mode="modal"
+				forceRedirectUrl={afterSignIn}
+				signUpForceRedirectUrl={afterSignIn}
+				asChild
+			>
 				{#snippet children({ signIn }: { signIn: () => void })}
 					<Button size="sm" class="rounded-xl" onclick={signIn}>Sign in</Button>
 				{/snippet}
@@ -152,7 +171,7 @@
 </header>
 
 {#snippet accountIcon()}
-	<CreditCard class="size-4" />
+	<CircleUserRound class="size-4" />
 {/snippet}
 
 <style>

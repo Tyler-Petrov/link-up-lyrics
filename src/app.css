@@ -156,6 +156,31 @@
 	text-shadow: 0 0 2rem var(--glow);
 }
 
+/* The floating header (app-header): pinned this far from the top, this tall. */
+:root {
+	--header-top: 0.75rem;
+	--header-height: 3rem;
+	--header-bottom: calc(var(--header-top) + var(--header-height));
+}
+
+/*
+ * A bar that stays in view under the header, like the editor's and the console's status card: pinned a small gap
+ * below it, and the gap is filled with the page so words scrolling past never show between the two.
+ */
+@utility sticky-under-header {
+	--under-header-gap: 0.5rem;
+	position: sticky;
+	top: calc(var(--header-bottom) + var(--under-header-gap));
+	&::before {
+		content: '';
+		position: absolute;
+		inset-inline: 0;
+		bottom: 100%;
+		height: var(--under-header-gap);
+		background: var(--background);
+	}
+}
+
 /*
  * Page changes and the theme switch are view transitions; the header (named in app-header) holds still. The old
  * page fades out a little ahead of the new one fading in, so the two never sit on top of each other for long.

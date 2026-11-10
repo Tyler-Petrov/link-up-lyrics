@@ -91,7 +91,10 @@
 			}}
 			transition:appear
 		>
-			Click anywhere for full screen
+			<!-- Click unless the screen is touch; a TV whose remote has no pointer reads Click too. -->
+			<span class="pointer-coarse:hidden">Click</span>
+			<span class="hidden pointer-coarse:inline">Tap</span>
+			anywhere for full screen
 		</p>
 	{/if}
 </div>

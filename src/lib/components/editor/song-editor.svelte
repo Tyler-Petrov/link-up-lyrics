@@ -309,7 +309,7 @@
 			{#each modes as mode (mode.value)}
 				<label
 					class={cn(
-						'cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring',
+						'inline-flex cursor-pointer items-center rounded-xl px-3 py-1.5 text-sm font-medium transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring pointer-coarse:min-h-10',
 						editor.mode === mode.value
 							? 'bg-primary text-primary-foreground'
 							: 'text-muted-foreground hover:text-foreground',

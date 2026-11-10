@@ -360,7 +360,7 @@
 	{#if !isRepeat}
 		<button
 			type="button"
-			class="ml-8 inline-flex w-fit items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+			class="ml-8 inline-flex w-fit items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:min-h-10"
 			onclick={addLine}
 		>
 			<Plus class="size-4" />

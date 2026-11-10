@@ -3,6 +3,7 @@
 	import { browser } from '$app/env';
 	import { onNavigate } from '$app/navigation';
 	import { page } from '$app/state';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { setupConvex } from 'convex-svelte';
 	import { ClerkProvider } from 'svelte-clerk';
@@ -88,6 +89,14 @@
 			fontFamily: 'inherit'
 		}
 	};
+	// Clerk's menu item opens its sign-in and profile settings; the header's Account item is the app's page.
+	const clerkLocalization = { userButton: { action__manageAccount: 'Sign-in & profile' } };
+
+	/*
+	 * Toasts: on phones under the floating header; on wide screens at the bottom right, clear of what a leader
+	 * watches (the console's status card under the header, its Prev/Next bar at the bottom of the song).
+	 */
+	const wide = new MediaQuery('min-width: 64rem');
 </script>
 
 <svelte:head>
@@ -98,7 +107,11 @@
 	/>
 </svelte:head>
 
-<ClerkProvider publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY} appearance={clerkAppearance}>
+<ClerkProvider
+	publishableKey={PUBLIC_CLERK_PUBLISHABLE_KEY}
+	appearance={clerkAppearance}
+	localization={clerkLocalization}
+>
 	<ConvexClerkSetup
 		isAuthenticated={Boolean(data.clerkUserId)}
 		serverToken={data.convexToken}
@@ -111,5 +124,8 @@
 <!-- Dark first: rooms are dim and phones shouldn't glare. -->
 <ModeWatcher defaultMode="dark" {themeColors} />
 <ConfirmationDialog />
-<!-- Below the floating header, so a toast never covers the nav. -->
-<Toaster position="top-center" offset={{ top: '4.75rem' }} mobileOffset={{ top: '4.5rem' }} />
+<Toaster
+	position={wide.current ? 'bottom-right' : 'top-center'}
+	offset={{ top: 'calc(var(--header-bottom) + 1rem)' }}
+	mobileOffset={{ top: 'calc(var(--header-bottom) + 0.75rem)' }}
+/>

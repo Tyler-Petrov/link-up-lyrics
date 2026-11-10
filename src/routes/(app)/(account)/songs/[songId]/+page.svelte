@@ -112,7 +112,7 @@
 			{/key}
 		</div>
 	{:else}
-		<article class="mt-10 rounded-2xl bg-card/60 p-5 sm:p-8">
+		<article class="mt-10 rounded-2xl bg-card p-5 shadow-sm shadow-black/10 sm:p-8">
 			{#if arrangement.blocks.length}
 				<SongChart blocks={arrangement.blocks} {semitones} {spelling} />
 			{:else}

@@ -167,7 +167,7 @@
 				? 'bg-transparent'
 				: isRepeat
 					? 'bg-card/35'
-					: 'bg-card/70',
+					: 'bg-card shadow-sm shadow-black/10',
 		editor.highlighted === section?._id && 'bg-primary/15 ring-2 ring-primary'
 	)}
 >

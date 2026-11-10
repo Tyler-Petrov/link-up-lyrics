@@ -30,12 +30,13 @@
 		{/snippet}
 	</main>
 
-	<!-- The one link to the terms and the takedown address, so anyone can find them signed in or out. -->
+	<!-- The one link to the terms and the takedown address, so anyone can find them signed in or out. 40px to tap
+	     on touch screens, like the header's links. -->
 	<footer class="mt-16 text-center text-xs">
 		<a
 			href="/legal"
 			aria-current={page.url.pathname === '/legal' ? 'page' : undefined}
-			class="rounded-md px-1 text-muted-foreground transition-colors hover:text-foreground"
+			class="inline-block rounded-md px-1 text-muted-foreground transition-colors hover:text-foreground pointer-coarse:py-3"
 		>
 			Terms, copyright and takedowns
 		</a>

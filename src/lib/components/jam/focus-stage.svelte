@@ -87,9 +87,13 @@
 			class="grid min-h-48 place-items-center content-center gap-4 rounded-3xl border-2 border-dashed border-border p-8 text-center text-muted-foreground"
 		>
 			<p>
-				{items.length
-					? 'Tap a song in the setlist, or press Start, to show it.'
-					: 'Add songs to the setlist to begin.'}
+				{#if !items.length}
+					Add songs to the setlist to begin.
+				{:else}
+					<!-- Below lg the setlist is behind the Setlist button. -->
+					<span class="lg:hidden">Open Setlist and tap a song, or press Start, to show it.</span>
+					<span class="max-lg:hidden">Tap a song in the setlist, or press Start, to show it.</span>
+				{/if}
 			</p>
 			<!-- Below lg the setlist is a sheet, so its Add songs is here too. Shown either way, so adding the first
 			     song doesn't close the dialog. -->
@@ -166,9 +170,19 @@
 				<ChevronRight class="size-6" />
 			{/if}
 		</button>
-		<p class="col-span-2 -mt-1 text-center text-xs text-muted-foreground/70 max-lg:hidden">
-			<kbd class="font-sans">←</kbd> <kbd class="font-sans">→</kbd>, Space, or a clicker
-		</p>
+		<!-- Before going live, says the room isn't following yet: the leader can step through on their own. -->
+		{#key session.isLive}
+			<p
+				class="col-span-2 -mt-1 text-center text-xs text-muted-foreground/70 max-lg:hidden"
+				in:appear
+			>
+				{#if session.isLive}
+					<kbd class="font-sans">←</kbd> <kbd class="font-sans">→</kbd>, Space, or a clicker
+				{:else}
+					Phones follow along once you go live
+				{/if}
+			</p>
+		{/key}
 	</div>
 </section>
 

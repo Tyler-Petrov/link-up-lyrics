@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { fade } from 'svelte/transition';
 	import WifiOff from '@lucide/svelte/icons/wifi-off';
 	import { api } from '#convex/_generated/api.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
 	import { groupArrangement, keySpelling } from '#lib/chart/index.js';
 	import { useConnection } from '#lib/connection.svelte.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
-	import { appear, ms } from '#lib/motion.js';
+	import { appear } from '#lib/motion.js';
 	import LivePresence from '#lib/components/live/live-presence.svelte';
 	import LiveSettings from '#lib/components/live/live-settings.svelte';
 	import LiveStage from '#lib/components/live/live-stage.svelte';
+	import { handIn, handOut } from '#lib/components/live/handoff.js';
 	import SongCredits from '#lib/components/chart/song-credits.svelte';
 	import { createViewerSettings } from '#lib/components/live/viewer-settings.svelte.js';
 	import type { PageProps } from './$types';
@@ -81,14 +81,10 @@
 			<p class="truncate text-xs text-muted-foreground">
 				{live.state === 'notFound' ? 'Link Up Lyrics' : live.name}
 			</p>
-			<!-- Hands off with the words below: the old title fades as they do, the new one with the new song's. -->
+			<!-- Hands over with the words below: the old title fades as they do, the new one with the new song's. -->
 			<p class="grid grid-cols-1 font-semibold">
-				{#key live.state === 'live' ? live.song.title : ''}
-					<span
-						class="col-start-1 row-start-1 truncate"
-						in:fade={{ duration: ms(320), delay: ms(120) }}
-						out:fade={{ duration: ms(120) }}
-					>
+				{#key live.state === 'live' && live.focusedItemId}
+					<span class="col-start-1 row-start-1 truncate" in:handIn out:handOut>
 						{#if live.state === 'live'}{live.song.title}{:else}&nbsp;{/if}
 					</span>
 				{/key}
@@ -135,13 +131,20 @@
 					{settings}
 				/>
 				<!-- At the foot of the screen, so a group changing size doesn't move them (one taller than the screen
-				     pushes them down, after its words). -->
-				<SongCredits
-					copyrightLine={live.song.copyrightLine}
-					ccliSongNumber={live.song.ccliSongNumber}
-					ccliLicenseNumber={live.ccliLicenseNumber}
-					class="mt-auto pt-10 opacity-70"
-				/>
+				     pushes them down, after its words). They hand over with the words; one bottom-aligned cell, so the new
+				     song's stay put as the old ones go. -->
+				<div class="mt-auto grid items-end pt-10 *:col-start-1 *:row-start-1">
+					{#key live.focusedItemId}
+						<div in:handIn out:handOut>
+							<SongCredits
+								copyrightLine={live.song.copyrightLine}
+								ccliSongNumber={live.song.ccliSongNumber}
+								ccliLicenseNumber={live.ccliLicenseNumber}
+								class="opacity-70"
+							/>
+						</div>
+					{/key}
+				</div>
 			{:else if live.state === 'notFound' && !ended}
 				<h1 class="text-2xl font-bold">This session doesn’t exist</h1>
 				<p class="max-w-xs text-muted-foreground">
@@ -181,19 +184,24 @@
 			aria-label="Group {groupIndex + 1} of {groups.length}"
 			transition:appear
 		>
-			<div class="mx-auto flex max-w-md gap-1">
-				{#each groups as group (group.key)}
-					<span
-						class={[
-							'h-1.5 flex-1 rounded-full transition-colors duration-500',
-							group.index === groupIndex
-								? 'bg-primary shadow-[0_0_10px] shadow-primary/15'
-								: group.index < groupIndex
-									? 'bg-primary/40'
-									: 'bg-muted-foreground/15'
-						]}
-					></span>
-				{/each}
+			<!-- Another song's bar hands over with its words, like the credits. -->
+			<div class="mx-auto grid max-w-md *:col-start-1 *:row-start-1">
+				{#key live.focusedItemId}
+					<div class="flex gap-1" in:handIn out:handOut>
+						{#each groups as group (group.key)}
+							<span
+								class={[
+									'h-1.5 flex-1 rounded-full transition-colors duration-500',
+									group.index === groupIndex
+										? 'bg-primary shadow-[0_0_10px] shadow-primary/15'
+										: group.index < groupIndex
+											? 'bg-primary/40'
+											: 'bg-muted-foreground/15'
+								]}
+							></span>
+						{/each}
+					</div>
+				{/key}
 			</div>
 		</footer>
 	{/if}

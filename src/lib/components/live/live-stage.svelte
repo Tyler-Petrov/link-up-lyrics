@@ -8,6 +8,7 @@
 	import { cn } from '#lib/utils.js';
 	import ChartGroupView from './chart-group.svelte';
 	import { follow } from './follow.js';
+	import { handIn, handOut } from './handoff.js';
 	import { TextSizes, type ViewerSettings } from './viewer-settings.svelte.js';
 
 	type Props = {
@@ -154,11 +155,7 @@
 						class="grid h-4 w-full justify-items-center text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase"
 					>
 						{#key blockName(current)}
-							<span
-								class="col-start-1 row-start-1"
-								in:fade={{ duration: ms(320), delay: ms(120) }}
-								out:fade={{ duration: ms(120) }}
-							>
+							<span class="col-start-1 row-start-1" in:handIn out:handOut>
 								{blockName(current) ?? ''}
 							</span>
 						{/key}
@@ -167,8 +164,8 @@
 						{#key `${focusedEpoch}:${index}`}
 							<div
 								class="col-start-1 row-start-1 flex min-w-0 flex-col items-center"
-								in:fly={{ y: 12, duration: ms(320), delay: ms(120) }}
-								out:fade={{ duration: ms(120) }}
+								in:handIn={{ y: 12 }}
+								out:handOut
 							>
 								{@render group(
 									current,
@@ -235,7 +232,7 @@
 	{:else if nowTitle}
 		<p
 			class="max-w-full truncate rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-lg shadow-black/40"
-			in:fly={{ y: 16, duration: ms(250) }}
+			in:handIn={{ y: 16 }}
 			out:fade={{ duration: ms(300) }}
 		>
 			Now: {nowTitle}

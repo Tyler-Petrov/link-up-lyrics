@@ -52,7 +52,7 @@ Chords above the words work too`;
 						id="paste-title"
 						name="title"
 						bind:value={form.data.title}
-						placeholder="From the text if blank"
+						placeholder="Untitled song if blank"
 					/>
 				</div>
 				<div class="flex flex-col gap-2">

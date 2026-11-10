@@ -57,8 +57,10 @@
 </div>
 
 <ul class="mt-6 flex flex-col gap-2" aria-busy={searching}>
+	<!-- Rows that drop out of a search go at once, so the list and what's under it settle in one move while the
+	     rest glide into place; rows coming back fade in. -->
 	{#each songs as song (song._id)}
-		<li animate:glide transition:appear>
+		<li animate:glide in:appear>
 			<a
 				href="/songs/{song._id}"
 				class="flex items-center gap-4 rounded-2xl bg-card px-5 py-4 shadow-sm shadow-black/10 transition-colors hover:bg-accent"

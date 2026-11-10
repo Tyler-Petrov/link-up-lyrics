@@ -61,17 +61,22 @@
 		(constantByTag('ChordRoots', rootTag).allowedAccidentals as readonly string[]).includes(
 			accidentalTag
 		);
+	/** Up to 14 characters from the target outwards, cut between words, with … where the line goes on. */
+	function excerpt(characters: string[]) {
+		if (characters.length <= 14) return characters;
+		const space = characters.lastIndexOf(' ', 14);
+		return [...characters.slice(0, space > 0 ? space : 14), '…'];
+	}
 	/** The line with the target character marked, for context. */
 	const context = $derived.by(() => {
 		if (!target) return { before: '', at: '', after: '' };
 		const text = target.characters.map((c) => c.character);
 		while (text.length <= target.index) text.push(' ');
-		const from = Math.max(0, target.index - 14);
 		const at = text[target.index]!;
 		return {
-			before: (from > 0 ? '…' : '') + text.slice(from, target.index).join(''),
+			before: excerpt(text.slice(0, target.index).reverse()).reverse().join(''),
 			at: at === ' ' ? '·' : at,
-			after: text.slice(target.index + 1, target.index + 15).join('')
+			after: excerpt(text.slice(target.index + 1)).join('')
 		};
 	});
 
@@ -116,29 +121,30 @@
 		if (event.target === dialog) finish('cancel');
 	}}
 >
+	<!-- The chord and the line stay in view at the top, as Set does at the bottom; the choices scroll between. -->
 	<div class="flex max-h-[inherit] flex-col">
-		<div class="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain p-5 pb-2">
-			<header class="flex items-start justify-between gap-3">
-				<div class="flex flex-col gap-1">
-					<span class="text-4xl font-[750] text-chord tabular-nums" aria-live="polite">
-						{formatChord(chord)}
-					</span>
-					<span class="font-chart text-sm whitespace-pre text-muted-foreground">
-						{context.before}<mark class="rounded bg-primary/25 px-0.5 text-foreground"
-							>{context.at}</mark
-						>{context.after}
-					</span>
-				</div>
-				<button
-					type="button"
-					class="rounded-xl p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
-					aria-label="Close"
-					onclick={() => finish('cancel')}
-				>
-					<X class="size-5" />
-				</button>
-			</header>
+		<header class="flex items-start justify-between gap-3 p-5 pb-3">
+			<div class="flex flex-col gap-1">
+				<span class="text-4xl font-[750] text-chord tabular-nums" aria-live="polite">
+					{formatChord(chord)}
+				</span>
+				<span class="font-chart text-sm whitespace-pre text-muted-foreground">
+					{context.before}<mark class="rounded bg-primary/25 px-0.5 text-foreground"
+						>{context.at}</mark
+					>{context.after}
+				</span>
+			</div>
+			<button
+				type="button"
+				class="rounded-xl p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
+				aria-label="Close"
+				onclick={() => finish('cancel')}
+			>
+				<X class="size-5" />
+			</button>
+		</header>
 
+		<div class="flex min-h-0 flex-col gap-5 overflow-y-auto overscroll-contain px-5 pt-2 pb-2">
 			<fieldset class="flex flex-col gap-2">
 				<legend class="mb-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 					Root

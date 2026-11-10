@@ -32,6 +32,7 @@
 		Math.min(session.focusedGroupIndex ?? 0, Math.max(0, groups.length - 1))
 	);
 	const atLastGroup = $derived(groupIndex >= groups.length - 1);
+	const atEnd = $derived(!!item && itemIndex === items.length - 1 && atLastGroup);
 
 	/** The setlist sheet, below lg (wider screens have the setlist beside the song). */
 	let setlistOpen = $state(false);
@@ -53,7 +54,7 @@
 	}
 
 	const barButton =
-		'flex h-16 items-center justify-center gap-2 rounded-2xl text-lg font-semibold shadow-lg shadow-black/25 transition-[transform,background-color,color] active:scale-[0.97] disabled:bg-card/60 disabled:text-muted-foreground disabled:shadow-none';
+		'flex h-16 items-center justify-center gap-2 rounded-2xl text-lg font-semibold shadow-lg shadow-black/25 transition-[transform,background-color,color] active:scale-[0.97] disabled:bg-card/60 disabled:text-muted-foreground disabled:shadow-none disabled:ring-1 disabled:ring-border';
 </script>
 
 <svelte:window {onkeydown} />
@@ -83,21 +84,41 @@
 		{/key}
 	{:else}
 		<div
-			class="grid min-h-48 place-items-center rounded-3xl border-2 border-dashed border-border p-8 text-center text-muted-foreground"
+			class="grid min-h-48 place-items-center content-center gap-4 rounded-3xl border-2 border-dashed border-border p-8 text-center text-muted-foreground"
 		>
-			{items.length
-				? 'Tap a song in the setlist, or press Start, to show it.'
-				: 'Add songs to the setlist to begin.'}
+			<p>
+				{items.length
+					? 'Tap a song in the setlist, or press Start, to show it.'
+					: 'Add songs to the setlist to begin.'}
+			</p>
+			<!-- Below lg the setlist is a sheet, so its Add songs is here too. Shown either way, so adding the first
+			     song doesn't close the dialog. -->
+			<div class="lg:hidden">
+				<AddSongDialog
+					jamSessionId={session._id}
+					songIdsInSetlist={items.map((item) => item.song._id)}
+				/>
+			</div>
 		</div>
 	{/if}
 
 	<!-- Thumb reach on a phone, under the chart on a laptop. Always here, so it never blinks between songs. -->
 	<div
 		class={[
-			'fixed inset-x-0 bottom-0 z-30 grid grid-cols-[4rem_1fr_1fr] gap-3 bg-gradient-to-t from-background from-60% to-transparent px-4 pt-8 pb-[max(1rem,env(safe-area-inset-bottom))] lg:sticky lg:bottom-4 lg:grid-cols-2 lg:rounded-3xl lg:bg-background/85 lg:bg-none lg:p-2 lg:backdrop-blur-md',
+			'fixed inset-x-0 bottom-0 z-30 grid grid-cols-[4rem_1fr_1fr] gap-3 bg-gradient-to-t from-background from-80% to-transparent px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] lg:sticky lg:bottom-4 lg:grid-cols-2 lg:rounded-3xl lg:bg-background/85 lg:bg-none lg:p-2 lg:backdrop-blur-md',
 			!items.length && 'lg:hidden'
 		]}
 	>
+		{#if item}
+			<!-- On a phone the song's title has usually scrolled away; this names the song and group Next steps from. -->
+			<p
+				class="col-span-full -mb-1 flex justify-center gap-1.5 text-xs text-muted-foreground lg:hidden"
+				in:appear
+			>
+				<span class="truncate font-semibold text-foreground">{item.song.title}</span>
+				<span class="shrink-0 tabular-nums">· Group {groupIndex + 1} of {groups.length}</span>
+			</p>
+		{/if}
 		<Dialog.Root bind:open={setlistOpen}>
 			<Dialog.Trigger
 				class="flex h-16 flex-col items-center justify-center gap-0.5 rounded-2xl bg-card text-xs font-semibold shadow-lg shadow-black/25 transition-transform active:scale-[0.97] lg:hidden"
@@ -135,11 +156,15 @@
 		<button
 			type="button"
 			class={cn(barButton, 'bg-primary text-primary-foreground')}
-			disabled={item ? itemIndex === items.length - 1 && atLastGroup : !items.length}
+			disabled={atEnd || !items.length}
 			onclick={() => step(1)}
 		>
-			{!item ? 'Start' : atLastGroup && items[itemIndex + 1] ? 'Next song' : 'Next'}
-			<ChevronRight class="size-6" />
+			{#if atEnd}
+				End of setlist
+			{:else}
+				{!item ? 'Start' : atLastGroup ? 'Next song' : 'Next'}
+				<ChevronRight class="size-6" />
+			{/if}
 		</button>
 		<p class="col-span-2 -mt-1 text-center text-xs text-muted-foreground/70 max-lg:hidden">
 			<kbd class="font-sans">←</kbd> <kbd class="font-sans">→</kbd>, Space, or a clicker

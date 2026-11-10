@@ -87,6 +87,22 @@
 			colorSuccess: 'var(--success)',
 			borderRadius: 'var(--radius)',
 			fontFamily: 'inherit'
+		},
+		elements: {
+			// One surface: Clerk's footer is a lighter band under a rounded card, which reads as a seam. The outer
+			// box keeps the rounding. The same for the account menu.
+			card: { boxShadow: 'none', borderRadius: 0 },
+			footer: { background: 'var(--card)' },
+			userButtonPopoverMain: { boxShadow: 'none', borderRadius: 0 },
+			userButtonPopoverFooter: { background: 'var(--card)' },
+			// "Continue with Google" is the sign-in's one action, so it looks like the app's secondary button.
+			socialButtonsBlockButton: {
+				minHeight: '2.5rem',
+				background: 'var(--secondary)',
+				color: 'var(--secondary-foreground)',
+				'&:hover': { background: 'color-mix(in oklch, var(--secondary), var(--foreground) 5%)' }
+			},
+			socialButtonsBlockButtonText: { color: 'inherit' }
 		}
 	};
 	// Clerk's menu item opens its sign-in and profile settings; the header's Account item is the app's page.

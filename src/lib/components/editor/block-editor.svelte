@@ -275,10 +275,12 @@
 					title="Line group {group.index + 1}: what the leader advances to live"
 					>{group.index + 1}</span
 				>
+				<!-- The rail joins a group's lines under its number; a one-line group has only the number. -->
 				<div
 					class={cn(
-						'pointer-events-none absolute top-8 bottom-2 left-[0.8rem] w-1 rounded-full transition-colors',
-						tinted ? 'bg-muted-foreground/70' : 'bg-muted-foreground/45'
+						'pointer-events-none absolute top-8 bottom-2 left-[0.8rem] w-1 rounded-full transition-[background-color,opacity]',
+						tinted ? 'bg-muted-foreground/70' : 'bg-muted-foreground/45',
+						group.lines.length < 2 && 'opacity-0'
 					)}
 				></div>
 				{#if !group.lines.length}
@@ -292,10 +294,15 @@
 				{/if}
 				{#each group.lines as line (line._id)}
 					{@const index = lineIndex.get(line._id)!}
+					<!-- Selected rows touch, so only the ends of the run are rounded and it reads as one band. -->
 					<div
 						class={cn(
-							'group/row flex min-h-9 scroll-mb-28 items-stretch rounded-xl transition-colors',
-							isSelected(index) && 'bg-primary/25'
+							'group/row flex min-h-9 scroll-mb-28 items-stretch rounded-xl transition-[background-color,border-radius]',
+							isSelected(index) && [
+								'bg-primary/25',
+								isSelected(index - 1) && 'rounded-t-none',
+								isSelected(index + 1) && 'rounded-b-none'
+							]
 						)}
 						data-select-line={index}
 						data-block-key={block.key}

@@ -66,7 +66,8 @@
 		<span class="dark grid size-8 place-items-center rounded-xl bg-secondary text-chord">
 			<Music class="size-4" />
 		</span>
-		<span class="hidden sm:inline">Link Up Lyrics</span>
+		<!-- Signed out there are no links, so a phone has room to say what this is; signed in, they need it. -->
+		<span class={cn(account.isSignedIn && 'hidden sm:inline')}>Link Up Lyrics</span>
 	</a>
 
 	{#if account.isSignedIn}

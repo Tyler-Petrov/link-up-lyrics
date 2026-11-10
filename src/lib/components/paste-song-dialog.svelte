@@ -19,7 +19,10 @@
 			await goto(`/songs/${songId}`);
 		}
 	});
-	const placeholder = `Verse 1
+	/* Opens with "For example" and stays dim, so it reads as a hint and not as words already pasted in. */
+	const placeholder = `For example:
+
+Verse 1
 [G]Amazing [G7]grace, how [C]sweet the [G]sound
 
 Chorus
@@ -67,7 +70,7 @@ Chords above the words work too`;
 					name="text"
 					bind:value={form.data.text}
 					rows={14}
-					class="font-chart"
+					class="font-chart placeholder:text-muted-foreground/50"
 					{placeholder}
 					aria-invalid={form.errors.text ? true : undefined}
 				/>

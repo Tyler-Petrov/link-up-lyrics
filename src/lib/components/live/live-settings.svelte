@@ -8,7 +8,7 @@
 	let open = $state(false);
 </script>
 
-<!-- A bottom sheet: within thumb reach, and the lyrics stay visible above it while you choose. -->
+<!-- A bottom sheet: within thumb reach, and the lyrics stay sharp above it, so a change shows as you make it. -->
 <Dialog.Root bind:open>
 	<Dialog.Trigger
 		class="grid size-11 place-items-center rounded-2xl text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
@@ -17,6 +17,7 @@
 		<SlidersHorizontal class="size-5" />
 	</Dialog.Trigger>
 	<Dialog.Content
+		overlayClass="backdrop-blur-none"
 		class="top-auto bottom-0 left-1/2 max-w-[min(100%-1rem,28rem)] translate-y-0 gap-5 rounded-t-3xl rounded-b-none bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-base sm:bottom-4 sm:max-w-md sm:rounded-3xl data-open:zoom-in-100 data-open:slide-in-from-bottom data-closed:zoom-out-100 data-closed:slide-out-to-bottom"
 	>
 		<Dialog.Header>

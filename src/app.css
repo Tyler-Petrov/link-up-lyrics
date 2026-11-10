@@ -144,6 +144,11 @@
 	body {
 		@apply bg-background text-foreground antialiased;
 	}
+	/* Selected text (the rename field selects its name on Make block) is a wash of the palette's aqua. Solid, so a
+	   chord's box and its word's don't double up where they overlap. */
+	::selection {
+		background-color: color-mix(in oklab, var(--primary) 35%, var(--background));
+	}
 	h1,
 	h2,
 	h3 {

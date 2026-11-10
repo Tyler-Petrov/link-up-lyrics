@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { on } from 'svelte/events';
 	import X from '@lucide/svelte/icons/x';
 	import type { Doc } from '#convex/_generated/dataModel.js';
 	import type { ChartCharacter } from '#convex/validators.js';
@@ -210,25 +211,47 @@
 	/* ---------- The chord lane (picker mode) ---------- */
 
 	const slots = $derived(Math.max(characters.length + 4, chordsOnly ? 24 : 8));
+	/** Each character's chord label, if it has one. */
+	const labels = $derived(characters.map((c) => c.chord && formatChord(c.chord)));
+	/**
+	 * How much of the lane a label takes, in ch: a label letter is 0.78ch of the words' (xs under base, sm under lg,
+	 * one monospace font), plus half a letter to keep labels apart.
+	 */
+	const labelSpan = (label: string) => (label.length + 0.5) * 0.78;
 	/**
 	 * Where each character's slot starts, in ch: one after another, except that on an interlude's line a chord
-	 * sits at least 4ch after the one before, as ChartLine spaces them, so `[D][G][A][D]` doesn't run together.
+	 * sits at least 4ch (or its label) after the one before, as ChartLine spaces them, so `[D][G][A][D]` doesn't
+	 * run together.
 	 */
 	const slotStarts = $derived.by(() => {
 		const starts: number[] = [];
-		let lastChord = -Infinity;
+		let free = -Infinity;
 		for (let index = 0; index < slots; index++) {
 			const next = index ? starts[index - 1]! + 1 : 0;
-			const spaced = chordsOnly && !!characters[index]?.chord;
-			starts.push(spaced ? Math.max(next, lastChord + 4) : next);
-			if (spaced) lastChord = starts[index]!;
+			const spaced = chordsOnly && labels[index];
+			starts.push(spaced ? Math.max(next, free) : next);
+			if (spaced) free = starts[index]! + Math.max(4, labelSpan(spaced));
 		}
 		return starts;
 	});
 	const laneWidth = $derived(slotStarts.at(-1)! + 1);
-	const chords = $derived(
-		characters.flatMap((c, index) => (c.chord ? [{ index, label: formatChord(c.chord) }] : []))
-	);
+	/**
+	 * Each chord and its row in the lane: the one by the words, or the lowest row above where its label won't run
+	 * into the chord before it (`Em/B` two letters before `G`), so every chord reads and has its own tap target.
+	 * The words stay as typed; only the lane grows, on the lines that need it.
+	 */
+	const chords = $derived.by(() => {
+		const rowEnds: number[] = [];
+		return labels.flatMap((label, index) => {
+			if (!label) return [];
+			const start = slotStarts[index]!;
+			const free = rowEnds.findIndex((end) => end <= start);
+			const row = free < 0 ? rowEnds.length : free;
+			rowEnds[row] = start + labelSpan(label);
+			return [{ index, label, row }];
+		});
+	});
+	const laneRows = $derived(Math.max(1, ...chords.map((chord) => chord.row + 1)));
 
 	function openPicker(index: number) {
 		editor.picker = {
@@ -239,26 +262,35 @@
 		};
 	}
 
-	function onLaneClick(event: MouseEvent) {
-		const lane = event.currentTarget as HTMLElement;
-		const rect = lane.getBoundingClientRect();
-		const at = ((event.clientX - rect.left) / rect.width) * laneWidth;
-		openPicker(slotStarts.findLastIndex((start) => start <= at));
-	}
+	/*
+	 * A touch browser nudges a near-miss tap onto something tappable nearby, but only counts an element with its
+	 * own click listener (not delegated, as onclick is) and passes over one holding other tappable things. So the
+	 * lane's taps go to a layer of their own under the chords, and all of the lane catches a thumb aimed at it.
+	 */
+	const laneClicks = (layer: HTMLElement) =>
+		on(layer, 'click', (event) => {
+			const rect = layer.getBoundingClientRect();
+			const at = ((event.clientX - rect.left) / rect.width) * laneWidth;
+			openPicker(slotStarts.findLastIndex((start) => start <= at));
+		});
 
 	/* Shared by each mode and the stand-in shown until the mode is known, so the switch changes nothing. */
-	/** A long line scrolls sideways; its right edge fades while there's more to see. */
+	/** A long line scrolls sideways; each edge fades while there's more to see past it. */
 	const scroller = 'min-w-0 flex-1 scroll-fade overflow-x-auto overscroll-x-contain';
 	const pickerRow = 'w-max min-w-full font-chart text-base leading-snug sm:text-lg';
 	/*
-	 * Taller on touch screens, so a thumb aimed above a letter lands in the lane and not in the words. A tick per
-	 * slot shows where chords go, but only on the line being edited (and under a mouse), so the song reads as words.
+	 * --rows rows of chords (one, unless chords would run together), each taller on touch screens, so a thumb aimed
+	 * above a letter lands in the lane and not in the words. A tick per slot shows where chords go, but only on the
+	 * line being edited (and under a mouse), so the song reads as words.
 	 */
 	const lane =
-		'relative h-6 rounded-md pointer-coarse:h-9 before:absolute before:inset-0 before:rounded-md before:bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)] before:opacity-0 before:transition-opacity group-focus-within/line:before:opacity-100 pointer-fine:group-hover/line:before:opacity-100';
-	/* As tall as the lane on touch, with the chord at its foot, so a chord is as easy to tap again. */
+		'relative h-[calc(var(--lane-row)*var(--rows))] rounded-md transition-[height] [--lane-row:1.5rem] pointer-coarse:[--lane-row:2.25rem] before:absolute before:inset-0 before:rounded-md before:bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)] before:opacity-0 before:transition-opacity group-focus-within/line:before:opacity-100 pointer-fine:group-hover/line:before:opacity-100';
+	/*
+	 * In its --row. On touch as tall as the row, with the chord at its foot, and at least two letters wide, so a
+	 * chord is as easy to tap again and a thumb a little off it changes it rather than adding one beside it.
+	 */
 	const chordPlace =
-		'absolute bottom-0 flex items-end rounded-md px-0.5 text-left leading-tight pointer-coarse:top-0';
+		'absolute bottom-[calc(var(--lane-row)*var(--row))] flex items-end rounded-md px-0.5 text-left leading-tight transition-[bottom] pointer-coarse:h-(--lane-row) pointer-coarse:min-w-[2ch]';
 	const chordLabel = 'text-xs font-bold whitespace-nowrap text-chord sm:text-sm';
 	const words = $derived(
 		cn('px-0 py-0.5', line.kindTag === 'comment' && 'text-muted-foreground italic')
@@ -280,10 +312,12 @@
 		</div>
 		<div class={cn(scroller, 'pointer-fine:hidden')}>
 			<div class={pickerRow}>
-				<div class={lane} style:width="{laneWidth}ch">
+				<div class={lane} style:width="{laneWidth}ch" style:--rows={laneRows}>
 					{#each chords as chord (chord.index)}
-						<span class={chordPlace} style:left="{slotStarts[chord.index]}ch"
-							><span class={chordLabel}>{chord.label}</span></span
+						<span
+							class={chordPlace}
+							style:left="{slotStarts[chord.index]}ch"
+							style:--row={chord.row}><span class={chordLabel}>{chord.label}</span></span
 						>
 					{/each}
 				</div>
@@ -296,22 +330,19 @@
 		<div class={cn(scroller, '[scrollbar-width:thin]')}>
 			<div class={pickerRow}>
 				<!-- The lane: one invisible slot per character (and a few past the end, for trailing chords). -->
-				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-				<div
-					class={cn(lane, 'cursor-pointer transition-colors hover:bg-chord/5')}
-					style:width="{laneWidth}ch"
-					onclick={onLaneClick}
-					title="Tap above a letter to put a chord on it"
-				>
+				<div class={lane} style:width="{laneWidth}ch" style:--rows={laneRows}>
+					<div
+						class="absolute inset-0 cursor-pointer rounded-md transition-colors hover:bg-chord/5"
+						{@attach laneClicks}
+						title="Tap above a letter to put a chord on it"
+					></div>
 					{#each chords as chord (chord.index)}
 						<button
 							type="button"
 							class={cn(chordPlace, 'hover:bg-chord/15 focus-visible:bg-chord/15')}
 							style:left="{slotStarts[chord.index]}ch"
-							onclick={(event) => {
-								event.stopPropagation();
-								openPicker(chord.index);
-							}}
+							style:--row={chord.row}
+							onclick={() => openPicker(chord.index)}
 							aria-label="Change chord {chord.label}"
 						>
 							<span class={chordLabel}>{chord.label}</span>
@@ -379,23 +410,43 @@
 </div>
 
 <style>
-	/* Scroll-driven: no animation (so no fade) when the line fits; the fade goes once scrolled to the end. */
+	/*
+	 * Scroll-driven: no animation (so no fade) when the line fits. The right edge fades until scrolled to the end,
+	 * the left one once scrolled from the start, so a line left scrolled doesn't look as if it starts mid-word.
+	 */
 	@property --fade {
 		syntax: '<length>';
 		inherits: false;
 		initial-value: 0px;
 	}
+	@property --fade-start {
+		syntax: '<length>';
+		inherits: false;
+		initial-value: 0px;
+	}
 	.scroll-fade {
-		mask-image: linear-gradient(to left, transparent, #000 var(--fade));
+		mask-image: linear-gradient(
+			to right,
+			transparent,
+			#000 var(--fade-start),
+			#000 calc(100% - var(--fade)),
+			transparent
+		);
 		animation: scroll-fade linear both;
 		animation-timeline: scroll(self inline);
 	}
 	@keyframes scroll-fade {
-		0%,
+		0% {
+			--fade-start: 0px;
+			--fade: 2rem;
+		}
+		10%,
 		90% {
+			--fade-start: 2rem;
 			--fade: 2rem;
 		}
 		100% {
+			--fade-start: 2rem;
 			--fade: 0px;
 		}
 	}

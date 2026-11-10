@@ -3,6 +3,7 @@
 	import { scale } from 'svelte/transition';
 	import { api } from '#convex/_generated/api.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { ms } from '#lib/motion.js';
 
 	const invitations = convexQuery(api.invitation.listMine, {});
 	const count = $derived(invitations.current?.length ?? 0);
@@ -10,7 +11,7 @@
 
 {#if count > 0}
 	<span
-		transition:scale={{ duration: 180, start: 0.4 }}
+		transition:scale={{ duration: ms(180), start: 0.4 }}
 		aria-label="{count} pending"
 		class="absolute top-0 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[0.65rem] font-bold text-primary-foreground"
 	>

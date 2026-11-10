@@ -28,6 +28,7 @@
 
 	const client = useConvexClient();
 	let open = $state(false);
+	let content = $state<HTMLElement | null>(null);
 	let search = $state('');
 	const debouncedSearch = new Debounced(() => search.trim(), 250);
 
@@ -68,8 +69,17 @@
 	>
 		<Plus /> Add songs
 	</Button>
-	<!-- A set height, so the list changing as you search never moves the centred dialog. -->
-	<Dialog.Content class="flex h-[min(40rem,90dvh)] flex-col rounded-2xl sm:max-w-lg">
+	<!-- A set height, so the list changing as you search never moves the centred dialog. On a touch screen it
+	     opens on the list, not the search field, so the keyboard doesn't cover the songs you came to tap. -->
+	<Dialog.Content
+		bind:ref={content}
+		class="flex h-[min(40rem,90dvh)] flex-col rounded-2xl sm:max-w-lg"
+		onOpenAutoFocus={(event) => {
+			if (!matchMedia('(pointer: coarse)').matches) return;
+			event.preventDefault();
+			content?.focus({ preventScroll: true });
+		}}
+	>
 		<Dialog.Header>
 			<Dialog.Title>Add songs from your library</Dialog.Title>
 			<Dialog.Description>They go to the end of the setlist. Drag to reorder.</Dialog.Description>

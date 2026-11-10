@@ -31,6 +31,12 @@
 	/** The owner's edit mode, in the URL (`?edit`) so a reload keeps it; everyone else only sees the chart. */
 	const editing = $derived(!!arrangement?.canEdit && page.url.searchParams.has('edit'));
 
+	/**
+	 * While Edit and Done crossfade, the button is named so it slides to its new place in the row. Only then: a
+	 * name left on would also lift it out of the crossfade from the library and float it over the old page.
+	 */
+	let toggling = $state(false);
+
 	/** Chart and editor crossfade as one change of the page (the layout's page transitions skip `?edit`). */
 	function toggleEditing() {
 		const go = () =>
@@ -39,12 +45,13 @@
 				reset: false
 			});
 		if (reduced() || !document.startViewTransition) return void go();
-		document
-			.startViewTransition(async () => {
-				await go();
-				await tick();
-			})
-			.ready.catch(() => undefined);
+		toggling = true;
+		const transition = document.startViewTransition(async () => {
+			await go();
+			await tick();
+		});
+		transition.ready.catch(() => undefined);
+		transition.finished.finally(() => (toggling = false));
 	}
 	const spelling = $derived(keySpelling(arrangement?.song.originalKeyTag, semitones));
 </script>
@@ -84,10 +91,9 @@
 				>
 			{/if}
 			{#if arrangement.canEdit}
-				<!-- Named, so the toggle's crossfade slides it to its new place in the row. -->
 				<Button
 					variant={editing ? 'default' : 'secondary'}
-					class="h-10 rounded-xl px-4 [view-transition-name:song-edit-toggle]"
+					class={['h-10 rounded-xl px-4', toggling && '[view-transition-name:song-edit-toggle]']}
 					onclick={toggleEditing}
 				>
 					{#if editing}<Check /> Done{:else}<Pencil /> Edit{/if}
@@ -116,8 +122,8 @@
 	{/if}
 
 	<footer class="mt-6 flex flex-col items-center gap-1 text-center text-xs text-muted-foreground">
-		<!-- "Not Specified" would only read like an error to the room. -->
-		{#if song.copyrightSourceTag !== 'unknown'}
+		<!-- "Not Specified" would only read like an error to the room, and a copyright line says it in full. -->
+		{#if song.copyrightSourceTag !== 'unknown' && !song.copyrightLine}
 			<span>{constantByTag('CopyrightSources', song.copyrightSourceTag).name}</span>
 		{/if}
 		<SongCredits

@@ -19,8 +19,9 @@
 	);
 </script>
 
+<!-- 40px tall, as the buttons beside it are; on touch screens the buttons alone are 40px, so no padding. -->
 <div
-	class="inline-flex items-center gap-1 rounded-xl bg-card p-1 shadow-sm"
+	class="inline-flex items-center gap-1 rounded-xl bg-card p-1 shadow-sm pointer-coarse:p-0"
 	role="group"
 	aria-label="Transpose"
 >
@@ -35,7 +36,7 @@
 	</Button>
 	<button
 		type="button"
-		class="min-w-20 rounded-lg px-2 py-1 text-center text-sm font-semibold tabular-nums hover:bg-accent"
+		class="min-w-20 self-stretch rounded-lg px-2 text-center text-sm font-semibold tabular-nums hover:bg-accent"
 		title="Back to the original key"
 		onclick={() => (semitones = 0)}
 	>

@@ -61,10 +61,11 @@
 <header
 	class="sticky top-(--header-top) z-40 mx-auto flex h-(--header-height) w-[min(100%-1.5rem,64rem)] items-center gap-1.5 rounded-2xl bg-card/85 px-3 shadow-lg shadow-black/20 backdrop-blur-md [view-transition-name:header] sm:gap-4 sm:px-4"
 >
+	<!-- Like the toggle and avatar, 40px to tap on touch screens without taking more room. -->
 	<a
 		href={home}
 		aria-label="Link Up Lyrics"
-		class="flex shrink-0 items-center gap-2 rounded-lg font-[750] tracking-tight"
+		class="flex shrink-0 items-center gap-2 rounded-lg font-[750] tracking-tight pointer-coarse:-m-1 pointer-coarse:p-1"
 	>
 		<!-- The mark is always the dark tile with an amber note, like the favicon: music, not a control. -->
 		<span class="dark grid size-8 place-items-center rounded-xl bg-secondary text-chord">

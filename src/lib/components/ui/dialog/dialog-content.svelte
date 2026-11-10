@@ -40,7 +40,13 @@
 		{#if showCloseButton}
 			<DialogPrimitive.Close data-slot="dialog-close">
 				{#snippet child({ props })}
-					<Button variant="ghost" class="absolute top-2 right-2" size="icon-sm" {...props}>
+					<!-- 40px on touch screens (icon-sm grows), its box 6px nearer the corner so the X stays where it is. -->
+					<Button
+						variant="ghost"
+						class="absolute top-2 right-2 pointer-coarse:top-0.5 pointer-coarse:right-0.5"
+						size="icon-sm"
+						{...props}
+					>
 						<XIcon  />
 						<span class="sr-only">Close</span>
 					</Button>

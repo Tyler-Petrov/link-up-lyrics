@@ -326,7 +326,15 @@
 							onpointercancel={onRailPointerUp}
 						></div>
 						{#if isRepeat}
-							<ChartLine characters={line.characters} class="py-1 opacity-80" />
+							<!-- Its words start where a bracket line's do (that input's padding), as the line editor's
+							     stand-in does until the mode is known. -->
+							<ChartLine
+								characters={line.characters}
+								class={cn(
+									'py-1 opacity-80',
+									editor.mode ? editor.mode === 'brackets' && 'ml-2' : 'pointer-fine:ml-2'
+								)}
+							/>
 						{:else}
 							<LineEditor
 								{line}

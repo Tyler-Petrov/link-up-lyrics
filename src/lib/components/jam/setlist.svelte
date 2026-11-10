@@ -157,7 +157,7 @@
 					<button
 						type="button"
 						class={cn(
-							'flex h-8 min-w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg pr-1.5 pl-2 font-chart text-sm transition-colors hover:bg-accent',
+							'flex h-8 min-w-14 shrink-0 items-center justify-center gap-0.5 rounded-lg pr-1.5 pl-2 font-chart text-sm transition-colors hover:bg-accent pointer-coarse:h-10',
 							item.transposeSemitones !== 0 ? 'bg-primary/15 text-primary' : 'bg-accent/60',
 							isOpen && 'ring-2 ring-ring'
 						)}

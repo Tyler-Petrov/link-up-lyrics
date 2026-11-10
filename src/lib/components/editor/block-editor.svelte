@@ -215,7 +215,7 @@
 			{#if isRepeat && block.type === 'section'}
 				<button
 					type="button"
-					class="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium hover:bg-primary hover:text-primary-foreground"
+					class="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium hover:bg-primary hover:text-primary-foreground pointer-coarse:min-h-10"
 					onclick={() => editor.reveal(block.source._id)}
 				>
 					<CornerUpLeft class="size-3" /> Edit original

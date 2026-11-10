@@ -91,7 +91,7 @@
 				No titles match “{debouncedSearch.current}”.
 				<button
 					type="button"
-					class="rounded-xl bg-secondary px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent"
+					class="rounded-xl bg-secondary px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent pointer-coarse:min-h-10"
 					onclick={() => (search = '')}
 				>
 					Clear search

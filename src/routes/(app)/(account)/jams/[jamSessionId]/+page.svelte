@@ -132,7 +132,8 @@
 		</Button>
 	</div>
 	{#if roleTag === 'owner'}
-		<!-- Stays while live, so going live never moves the song and the Prev/Next bar under the leader. -->
+		<!-- Only when hosting needs the owner (a card that didn't go through, a plan that ended); the Account page
+		     has the rest. -->
 		<HostingStatus class="mt-3 w-full" />
 	{/if}
 

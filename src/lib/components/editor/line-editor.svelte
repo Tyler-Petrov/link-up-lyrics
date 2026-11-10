@@ -13,6 +13,7 @@
 		serializeLine,
 		setChordAt
 	} from '#lib/chart/index.js';
+	import { reduced } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 	import { getSongEditor } from './editor.svelte.js';
 
@@ -86,6 +87,10 @@
 		void flush();
 		draftCharacters = null;
 		draftText = null;
+		// As a plain input does, a line you leave shows its start again. Not in picker mode: tapping a chord there
+		// takes the focus too, and the line should stay where it is.
+		if (mode === 'brackets')
+			input?.parentElement?.scrollTo({ left: 0, behavior: reduced() ? 'instant' : 'smooth' });
 	}
 
 	/** The line cut at the selection (which is dropped), in characters. */
@@ -205,6 +210,22 @@
 	/* ---------- The chord lane (picker mode) ---------- */
 
 	const slots = $derived(Math.max(characters.length + 4, chordsOnly ? 24 : 8));
+	/**
+	 * Where each character's slot starts, in ch: one after another, except that on an interlude's line a chord
+	 * sits at least 4ch after the one before, as ChartLine spaces them, so `[D][G][A][D]` doesn't run together.
+	 */
+	const slotStarts = $derived.by(() => {
+		const starts: number[] = [];
+		let lastChord = -Infinity;
+		for (let index = 0; index < slots; index++) {
+			const next = index ? starts[index - 1]! + 1 : 0;
+			const spaced = chordsOnly && !!characters[index]?.chord;
+			starts.push(spaced ? Math.max(next, lastChord + 4) : next);
+			if (spaced) lastChord = starts[index]!;
+		}
+		return starts;
+	});
+	const laneWidth = $derived(slotStarts.at(-1)! + 1);
 	const chords = $derived(
 		characters.flatMap((c, index) => (c.chord ? [{ index, label: formatChord(c.chord) }] : []))
 	);
@@ -221,50 +242,73 @@
 	function onLaneClick(event: MouseEvent) {
 		const lane = event.currentTarget as HTMLElement;
 		const rect = lane.getBoundingClientRect();
-		openPicker(Math.floor((event.clientX - rect.left) / (rect.width / slots)));
+		const at = ((event.clientX - rect.left) / rect.width) * laneWidth;
+		openPicker(slotStarts.findLastIndex((start) => start <= at));
 	}
+
+	/* Shared by each mode and the stand-in shown until the mode is known, so the switch changes nothing. */
+	/** A long line scrolls sideways; its right edge fades while there's more to see. */
+	const scroller = 'min-w-0 flex-1 scroll-fade overflow-x-auto overscroll-x-contain';
+	const pickerRow = 'w-max min-w-full font-chart text-base leading-snug sm:text-lg';
+	const lane =
+		'relative h-6 rounded-md bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)]';
+	const chordPlace = 'absolute bottom-0 rounded-md px-0.5 text-left leading-tight';
+	const chordLabel = 'text-xs font-bold whitespace-nowrap text-chord sm:text-sm';
+	const words = $derived(
+		cn('px-0 py-0.5', line.kindTag === 'comment' && 'text-muted-foreground italic')
+	);
+	const bracketWords = $derived(
+		cn(
+			'px-2 py-1.5 font-chart text-base',
+			line.kindTag === 'comment' && 'text-muted-foreground italic'
+		)
+	);
 </script>
 
 <div class="group/line flex min-w-0 flex-1 items-end gap-1">
 	{#if !mode}
-		<!-- Until the mode is known: the words, as tall as the default mode's row on this kind of screen. -->
-		<p
-			class={cn(
-				'min-h-9 min-w-0 flex-1 truncate px-2 py-1.5 font-chart text-base',
-				!chordsOnly &&
-					'pointer-coarse:min-h-[calc(1.75rem+1.375em)] pointer-coarse:px-0 pointer-coarse:pt-[1.625rem] pointer-coarse:pb-0.5 pointer-coarse:leading-snug sm:pointer-coarse:text-lg'
-			)}
-		>
-			{lineText(line.characters)}
-		</p>
+		<!-- Until the mode is known (the server render, and hydrating): the line as this kind of screen's default
+		     mode shows it, chords and all, so the switch to the real one changes nothing. -->
+		<div class={cn(scroller, 'pointer-coarse:hidden')}>
+			<p class={cn(bracketWords, 'whitespace-pre')}>{serializeLine(line.characters) || ' '}</p>
+		</div>
+		<div class={cn(scroller, 'pointer-fine:hidden')}>
+			<div class={pickerRow}>
+				<div class={lane} style:width="{laneWidth}ch">
+					{#each chords as chord (chord.index)}
+						<span class={chordPlace} style:left="{slotStarts[chord.index]}ch"
+							><span class={chordLabel}>{chord.label}</span></span
+						>
+					{/each}
+				</div>
+				{#if !chordsOnly}
+					<p class={cn(words, 'whitespace-pre')}>{lineText(line.characters) || ' '}</p>
+				{/if}
+			</div>
+		</div>
 	{:else if mode === 'picker'}
-		<!-- A long line scrolls sideways; its right edge fades while there's more to see. -->
-		<div
-			class="min-w-0 flex-1 scroll-fade [scrollbar-width:thin] overflow-x-auto overscroll-x-contain"
-		>
-			<div class="w-max min-w-full font-chart text-base leading-snug sm:text-lg">
+		<div class={cn(scroller, '[scrollbar-width:thin]')}>
+			<div class={pickerRow}>
 				<!-- The lane: one invisible slot per character (and a few past the end, for trailing chords). -->
 				<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 				<div
-					class="relative h-6 cursor-pointer rounded-md bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)] transition-colors hover:bg-chord/5"
-					style:width="{slots}ch"
+					class={cn(lane, 'cursor-pointer transition-colors hover:bg-chord/5')}
+					style:width="{laneWidth}ch"
 					onclick={onLaneClick}
 					title="Tap above a letter to put a chord on it"
 				>
 					{#each chords as chord (chord.index)}
 						<button
 							type="button"
-							class="absolute bottom-0 rounded-md px-0.5 text-left leading-tight hover:bg-chord/15 focus-visible:bg-chord/15"
-							style:left="{chord.index}ch"
+							class={cn(chordPlace, 'hover:bg-chord/15 focus-visible:bg-chord/15')}
+							style:left="{slotStarts[chord.index]}ch"
 							onclick={(event) => {
 								event.stopPropagation();
 								openPicker(chord.index);
 							}}
 							aria-label="Change chord {chord.label}"
 						>
-							<span class="text-xs font-bold whitespace-nowrap text-chord sm:text-sm"
-								>{chord.label}</span
-							>
+							<span class={chordLabel}>{chord.label}</span>
 						</button>
 					{/each}
 				</div>
@@ -279,8 +323,8 @@
 						{onkeydown}
 						{onpaste}
 						class={cn(
-							'block w-full rounded-md bg-transparent px-0 py-0.5 outline-none placeholder:text-muted-foreground/50 focus:bg-foreground/5',
-							line.kindTag === 'comment' && 'text-muted-foreground italic'
+							words,
+							'block w-full rounded-md bg-transparent outline-none placeholder:text-muted-foreground/50 focus:bg-foreground/5'
 						)}
 						style:min-width="{slots}ch"
 						placeholder="Type the words…"
@@ -292,24 +336,28 @@
 			</div>
 		</div>
 	{:else}
-		<input
-			bind:this={input}
-			data-line-input
-			{value}
-			{oninput}
-			{onblur}
-			{onbeforeinput}
-			{onkeydown}
-			{onpaste}
-			class={cn(
-				'block min-w-0 flex-1 rounded-lg bg-transparent px-2 py-1.5 font-chart text-base outline-none placeholder:text-muted-foreground/50 focus:bg-foreground/5',
-				line.kindTag === 'comment' && 'text-muted-foreground italic'
-			)}
-			placeholder={chordsOnly ? '[G]    [C]    [D]' : '[G]Amazing [G7]grace'}
-			aria-label="Line with chords in brackets"
-			autocomplete="off"
-			spellcheck="false"
-		/>
+		<!-- Monospace, so the input is as wide as its text and the row scrolls and fades as in picker mode. -->
+		<div class={cn(scroller, '[scrollbar-width:none]')}>
+			<input
+				bind:this={input}
+				data-line-input
+				{value}
+				{oninput}
+				{onblur}
+				{onbeforeinput}
+				{onkeydown}
+				{onpaste}
+				class={cn(
+					bracketWords,
+					'block min-w-full rounded-lg bg-transparent outline-none placeholder:text-muted-foreground/50 focus:bg-foreground/5'
+				)}
+				style:width="calc({value.length + 1}ch + 1rem)"
+				placeholder={chordsOnly ? '[G]    [C]    [D]' : '[G]Amazing [G7]grace'}
+				aria-label="Line with chords in brackets"
+				autocomplete="off"
+				spellcheck="false"
+			/>
+		</div>
 	{/if}
 	<!-- Shown on hover, or for the line being edited. On touch it takes no room until then, so the words
 	     get the width (and a stray tap can't delete another line). -->

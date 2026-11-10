@@ -18,7 +18,7 @@
 		ordersBetween,
 		type ArrangementBlock
 	} from '#lib/chart/index.js';
-	import { appear, ms, reveal } from '#lib/motion.js';
+	import { appear, morph, ms, reveal } from '#lib/motion.js';
 	import { sortable } from '#lib/sortable.js';
 	import { cn } from '#lib/utils.js';
 	import { Advanced } from '#lib/components/ui/advanced/index.js';
@@ -56,9 +56,20 @@
 		return blocks.map((block) => (block.type === 'loose' ? `loose:${loose++}` : block.key));
 	});
 
-	const modes: { value: ChordEntryMode; label: string; hint: string }[] = [
-		{ value: 'picker', label: 'Tap chords', hint: 'Tap above a letter to pick a chord' },
-		{ value: 'brackets', label: 'Brackets', hint: 'Type chords in brackets: [G]Amazing [G7]grace' }
+	/** `default`: before the mode is known (line-editor), shown picked on the screens it's the default for. */
+	const modes: { value: ChordEntryMode; label: string; hint: string; default: string }[] = [
+		{
+			value: 'picker',
+			label: 'Tap chords',
+			hint: 'Tap above a letter to pick a chord',
+			default: 'pointer-coarse:bg-primary pointer-coarse:text-primary-foreground'
+		},
+		{
+			value: 'brackets',
+			label: 'Brackets',
+			hint: 'Type chords in brackets: [G]Amazing [G7]grace',
+			default: 'pointer-fine:bg-primary pointer-fine:text-primary-foreground'
+		}
 	];
 
 	/* ---------- Reorder: blocks and loose-line runs share the song's order space ---------- */
@@ -151,15 +162,23 @@
 			lineId: line._id,
 			startsGroup
 		});
+		const groupMarks = [
+			...(from > 0 && !first!.startsGroup ? [mark(true)(first!)] : []),
+			...rest.filter((line) => line.startsGroup).map(mark(false)),
+			...(after && !after.startsGroup ? [mark(true)(after)] : [])
+		];
+		const groupStarts = rest.filter((line) => line.startsGroup).length;
 		return {
 			dragging: selection.dragging,
 			lines,
+			/** Says why Group or Ungroup is greyed out, on touch screens too (no tooltips there). */
+			groupsLabel: !groupMarks.length
+				? 'one group'
+				: groupStarts
+					? `${groupStarts + 1} groups`
+					: 'part of a group',
 			/** One group: its first line starts one, the line after it starts the next, none between. */
-			groupMarks: [
-				...(from > 0 && !first!.startsGroup ? [mark(true)(first!)] : []),
-				...rest.filter((line) => line.startsGroup).map(mark(false)),
-				...(after && !after.startsGroup ? [mark(true)(after)] : [])
-			],
+			groupMarks,
 			/**
 			 * Merged into one neighbouring group: the one above, or at the top of a block the one below.
 			 * Ungrouping [C D] in [A B][C D][E F] gives [A B C D][E F]. A block's first line always starts one.
@@ -224,7 +243,7 @@
 <div class="flex flex-col gap-4">
 	<!-- Stays under the app header while you scroll, so whether your words are saved is always in view. -->
 	<div
-		class="sticky top-17 z-30 -mx-2 flex items-center justify-between gap-3 rounded-2xl bg-background/85 p-2 backdrop-blur-md"
+		class="sticky-under-header z-30 -mx-2 flex items-center justify-between gap-3 rounded-2xl bg-background/85 p-2 backdrop-blur-md"
 	>
 		<div
 			class="inline-flex rounded-2xl bg-card p-1 shadow-sm"
@@ -237,7 +256,8 @@
 						'cursor-pointer rounded-xl px-3 py-1.5 text-sm font-medium transition-colors has-focus-visible:ring-2 has-focus-visible:ring-ring',
 						editor.mode === mode.value
 							? 'bg-primary text-primary-foreground'
-							: 'text-muted-foreground hover:text-foreground'
+							: 'text-muted-foreground hover:text-foreground',
+						!editor.mode && mode.default
 					)}
 					title={mode.hint}
 				>
@@ -247,7 +267,7 @@
 						name="chord-entry-mode"
 						value={mode.value}
 						checked={editor.mode === mode.value}
-						onchange={() => editor.setMode(mode.value)}
+						onchange={() => morph(() => editor.setMode(mode.value))}
 					/>
 					{mode.label}
 				</label>
@@ -342,15 +362,18 @@
 		class="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex justify-center px-3"
 		transition:fly={{ y: 24, duration: ms(180) }}
 	>
+		<!-- On a phone the count gets a row of its own above the buttons, so all of it fits. -->
 		<div
-			class="flex items-center gap-1 rounded-2xl bg-popover p-1.5 text-popover-foreground shadow-2xl ring-1 ring-border"
+			class="flex flex-wrap items-center justify-center gap-1 rounded-2xl bg-popover p-1.5 text-popover-foreground shadow-2xl ring-1 ring-border"
 			data-selection-keep
 			role="toolbar"
 			aria-label="Selected lines"
 		>
-			<span class="px-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+			<span
+				class="px-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums max-sm:w-full max-sm:pt-1 max-sm:text-center"
+			>
 				{selected.lines.length}
-				{selected.lines.length === 1 ? 'line' : 'lines'}
+				{selected.lines.length === 1 ? 'line' : 'lines'} · {selected.groupsLabel}
 			</span>
 			<button
 				type="button"

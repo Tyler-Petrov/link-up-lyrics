@@ -250,9 +250,12 @@
 	/** A long line scrolls sideways; its right edge fades while there's more to see. */
 	const scroller = 'min-w-0 flex-1 scroll-fade overflow-x-auto overscroll-x-contain';
 	const pickerRow = 'w-max min-w-full font-chart text-base leading-snug sm:text-lg';
+	/* Taller on touch screens, so a thumb aimed above a letter lands in the lane and not in the words. */
 	const lane =
-		'relative h-6 rounded-md bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)]';
-	const chordPlace = 'absolute bottom-0 rounded-md px-0.5 text-left leading-tight';
+		'relative h-6 rounded-md pointer-coarse:h-9 bg-[repeating-linear-gradient(90deg,transparent_0_calc(1ch-1px),color-mix(in_oklab,var(--chord)_8%,transparent)_calc(1ch-1px)_1ch)]';
+	/* As tall as the lane on touch, with the chord at its foot, so a chord is as easy to tap again. */
+	const chordPlace =
+		'absolute bottom-0 flex items-end rounded-md px-0.5 text-left leading-tight pointer-coarse:top-0';
 	const chordLabel = 'text-xs font-bold whitespace-nowrap text-chord sm:text-sm';
 	const words = $derived(
 		cn('px-0 py-0.5', line.kindTag === 'comment' && 'text-muted-foreground italic')

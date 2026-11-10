@@ -51,7 +51,7 @@
 				to the songs.
 			</p>
 		</header>
-		<HostingStatus class="self-start" />
+		<HostingStatus always class="self-start" />
 		{#if PUBLIC_CLERK_BILLING_ENABLED}
 			<!-- The plans and prices live in Clerk, so they're said only here. -->
 			<Advanced label="See plans" open={needsPlan}>

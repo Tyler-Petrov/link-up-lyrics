@@ -1,7 +1,8 @@
 <script lang="ts">
 	/*
 	 * The signed-in person's hosting status, one line. Mount it for the session OWNER only (billing is between us
-	 * and them), next to "Go live", and not while a session is live. Says the date, not a count. §13.3.3.
+	 * and them). Says nothing while hosting is fine, so the jam console shows it only when the owner has
+	 * something to do; the Account page passes `always` to name the plan too. Says the date, not a count. §13.3.3.
 	 */
 	import { page } from '$app/state';
 	import CircleAlert from '@lucide/svelte/icons/circle-alert';
@@ -11,9 +12,10 @@
 	import { api } from '#convex/_generated/api.js';
 	import { canHost, DAY, effectivePlanTag } from '#convex/model/billing.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
+	import { reveal } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 
-	let { class: className }: { class?: string } = $props();
+	let { always = false, class: className }: { always?: boolean; class?: string } = $props();
 
 	const user = $derived(await convexQuery(api.user.me, {}));
 	const date = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
@@ -65,30 +67,34 @@
 	});
 </script>
 
-<p
-	class={cn(
-		'inline-flex items-start gap-2 rounded-xl px-3 py-2 text-sm leading-snug',
-		status.tone === 'ok' && 'bg-accent/60 text-muted-foreground',
-		status.tone === 'notice' && 'bg-primary/15 text-foreground',
-		status.tone === 'urgent' && 'bg-destructive/20 text-foreground',
-		status.tone === 'blocked' && 'bg-secondary text-foreground',
-		className
-	)}
->
-	<status.icon
+{#if always || status.tone !== 'ok'}
+	<!-- Slides open and shut if it changes while you're looking (a card fails mid-session). -->
+	<p
+		transition:reveal
 		class={cn(
-			'mt-0.5 size-4 shrink-0',
-			status.tone === 'urgent' ? 'text-destructive' : 'text-primary'
+			'inline-flex items-start gap-2 rounded-xl px-3 py-2 text-sm leading-snug',
+			status.tone === 'ok' && 'bg-accent/60 text-muted-foreground',
+			status.tone === 'notice' && 'bg-primary/15 text-foreground',
+			status.tone === 'urgent' && 'bg-destructive/20 text-foreground',
+			status.tone === 'blocked' && 'bg-secondary text-foreground',
+			className
 		)}
-	/>
-	<span>
-		{status.text}
-		{#if 'action' in status && page.url.pathname !== '/account'}
-			<a
-				href="/account"
-				class="ml-1 font-semibold whitespace-nowrap text-primary underline-offset-4 hover:underline"
-				>{status.action}</a
-			>
-		{/if}
-	</span>
-</p>
+	>
+		<status.icon
+			class={cn(
+				'mt-0.5 size-4 shrink-0',
+				status.tone === 'urgent' ? 'text-destructive' : 'text-primary'
+			)}
+		/>
+		<span>
+			{status.text}
+			{#if 'action' in status && page.url.pathname !== '/account'}
+				<a
+					href="/account"
+					class="ml-1 font-semibold whitespace-nowrap text-primary underline-offset-4 hover:underline"
+					>{status.action}</a
+				>
+			{/if}
+		</span>
+	</p>
+{/if}

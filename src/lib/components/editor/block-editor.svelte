@@ -175,7 +175,7 @@
 		<button
 			type="button"
 			class={cn(
-				'block-handle cursor-grab touch-none rounded-lg p-1.5 text-muted-foreground hover:bg-accent active:cursor-grabbing',
+				'block-handle cursor-grab touch-none rounded-lg p-1.5 text-muted-foreground hover:bg-accent active:cursor-grabbing pointer-coarse:min-h-10',
 				quiet
 			)}
 			aria-label="Drag to reorder"
@@ -205,7 +205,7 @@
 			{:else}
 				<button
 					type="button"
-					class="min-w-0 truncate rounded-lg px-2 py-1 text-left text-sm font-semibold tracking-wide text-muted-foreground uppercase hover:bg-accent hover:text-foreground"
+					class="min-w-0 truncate rounded-lg px-2 py-1 text-left text-sm font-semibold tracking-wide text-muted-foreground uppercase hover:bg-accent hover:text-foreground pointer-coarse:min-h-10"
 					title="Rename"
 					onclick={() => (editor.renaming = section._id)}
 				>
@@ -221,19 +221,23 @@
 					<CornerUpLeft class="size-3" /> Edit original
 				</button>
 			{/if}
-			<div class={cn('ml-auto flex shrink-0 items-center', quiet)}>
+			<!-- A repeat has no Repeat button: the same icon already marks it by its name, and Edit original leads
+			     to the block to repeat. -->
+			<div class={cn('ml-auto flex shrink-0 items-center gap-1', quiet)}>
+				{#if !isRepeat}
+					<button
+						type="button"
+						class="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:p-3"
+						title="Repeat at the end of the song"
+						aria-label="Repeat {section.name} at the end of the song"
+						onclick={() => editor.repeatSection(section._id)}
+					>
+						<Repeat class="size-4" />
+					</button>
+				{/if}
 				<button
 					type="button"
-					class="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
-					title="Repeat at the end of the song"
-					aria-label="Repeat {section.name} at the end of the song"
-					onclick={() => editor.repeatSection(section._id)}
-				>
-					<Repeat class="size-4" />
-				</button>
-				<button
-					type="button"
-					class="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+					class="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive pointer-coarse:p-3"
 					title="Delete"
 					aria-label="Delete {section.name}"
 					onclick={remove}
@@ -319,7 +323,7 @@
 							/>
 							<button
 								type="button"
-								class="line-handle mb-0.5 shrink-0 cursor-grab touch-none self-end rounded-lg p-1.5 text-muted-foreground/60 transition-opacity hover:bg-accent hover:text-foreground active:cursor-grabbing pointer-fine:opacity-0 pointer-fine:group-focus-within/row:opacity-100 pointer-fine:group-hover/row:opacity-100"
+								class="line-handle mb-0.5 shrink-0 cursor-grab touch-none self-end rounded-lg p-1.5 text-muted-foreground/60 transition-opacity hover:bg-accent hover:text-foreground active:cursor-grabbing pointer-coarse:min-h-10 pointer-fine:opacity-0 pointer-fine:group-focus-within/row:opacity-100 pointer-fine:group-hover/row:opacity-100"
 								aria-label="Drag to move this line"
 								title="Drag to move this line"
 							>

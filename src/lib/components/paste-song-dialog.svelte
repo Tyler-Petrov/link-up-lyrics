@@ -34,7 +34,7 @@ Chords above the words work too`;
 	<Button class="h-10 rounded-xl px-4" onclick={() => form.resetOpen()}>
 		<ClipboardPaste /> Paste a song
 	</Button>
-	<Dialog.Content class="rounded-2xl sm:max-w-2xl">
+	<Dialog.Content class="max-h-[92dvh] overflow-y-auto rounded-2xl sm:max-w-2xl">
 		<Dialog.Header>
 			<Dialog.Title>Paste a song</Dialog.Title>
 			<Dialog.Description>
@@ -69,8 +69,7 @@ Chords above the words work too`;
 					id="paste-text"
 					name="text"
 					bind:value={form.data.text}
-					rows={14}
-					class="font-chart placeholder:text-muted-foreground/50"
+					class="h-[min(22rem,40dvh)] font-chart field-sizing-fixed placeholder:text-muted-foreground/50"
 					{placeholder}
 					aria-invalid={form.errors.text ? true : undefined}
 				/>

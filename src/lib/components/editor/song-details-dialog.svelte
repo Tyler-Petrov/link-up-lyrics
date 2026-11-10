@@ -66,10 +66,11 @@
 			confirmLabel: 'Delete song'
 		});
 		if (!confirmed) return;
-		const songId = song._id;
+		const { _id: songId, title } = song;
 		await goto('/library');
 		try {
 			await client.mutation(api.song.remove, { songId });
+			toast.success(`Deleted “${title}”`);
 		} catch (error) {
 			console.error(error);
 			toast.error(errorMessage(error, 'Couldn’t delete the song. Try again.'));

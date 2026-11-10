@@ -82,9 +82,10 @@
 {/if}
 
 <div class="flex min-h-dvh flex-col">
-	<!-- Fixed height, so chips coming and going never move the words. -->
+	<!-- Fixed height, so chips coming and going never move the words. Solid behind the titles, and words scrolling
+	     up fade out just below it rather than running through them. -->
 	<header
-		class="sticky top-0 z-20 flex h-16 items-center gap-3 bg-gradient-to-b from-background from-60% to-transparent px-4 pt-[env(safe-area-inset-top)]"
+		class="sticky top-0 z-20 flex h-16 items-center gap-3 bg-background px-4 pt-[env(safe-area-inset-top)] after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-6 after:bg-gradient-to-b after:from-background after:to-transparent"
 	>
 		<div class="min-w-0 flex-1">
 			<p class="truncate text-xs text-muted-foreground">

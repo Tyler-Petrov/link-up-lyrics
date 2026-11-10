@@ -102,7 +102,8 @@ export class SongEditorState {
 	#mounted = new IsMounted();
 	/**
 	 * How chords are entered, once it's known: undefined in the server render and while it hydrates, which can't
-	 * see a per-device setting. Until then lines hold their place at the default mode's height (line-editor).
+	 * see a per-device setting. Until then lines look as this kind of screen's default mode shows them
+	 * (line-editor).
 	 */
 	get mode() {
 		return this.#mounted.current ? this.#modePreference.current : undefined;

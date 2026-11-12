@@ -1,0 +1,96 @@
+name: Deploy preview
+
+run-name: Deploy preview for PR #${{ github.event.pull_request.number }}
+
+# Opt-in: add the deploy-preview label to a PR. Each push while the label is on gives the branch a fresh Convex
+# preview deployment (seeded from seed.zip; Convex removes it on its own) and uploads a version of the
+# link-up-lyrics-preview Worker under the pr-<number> alias, then comments the URL on the PR. Previews run on
+# the Clerk development instance, so `pnpm dev sign-in`'s Convex function works there too. Production is never
+# touched.
+
+on:
+  pull_request:
+    types: [labeled, synchronize, reopened]
+
+concurrency:
+  group: deploy-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(github.event.pull_request.labels.*.name, 'deploy-preview')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      BRANCH: ${{ github.event.pull_request.head.ref }}
+      PR: ${{ github.event.pull_request.number }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Builds against the new deployment: its URLs, and the development instance's public Clerk key in place of
+      # .env.production's.
+      - name: Deploy the Convex preview and build against it
+        id: convex
+        run: |
+          set -euo pipefail
+          export "$(grep -E '^PUBLIC_CLERK_PUBLISHABLE_KEY=' .env.development)"
+          pnpm exec convex deploy --preview-create "$BRANCH" --yes \
+            --cmd 'PUBLIC_CONVEX_SITE_URL="${PUBLIC_CONVEX_URL%.cloud}.site" pnpm build' \
+            --cmd-url-env-var-name PUBLIC_CONVEX_URL 2>&1 | tee deploy.log
+          name="$(grep -oE 'https://[a-z]+-[a-z]+-[0-9]+\.convex\.cloud' deploy.log | tail -1 | cut -d/ -f3 | cut -d. -f1)"
+          if [[ -z "$name" ]]; then
+            echo "::error::Convex didn't print the preview deployment's URL."
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Load the seed and run migrations
+        env:
+          DEPLOYMENT: ${{ steps.convex.outputs.name }}
+        run: |
+          pnpm exec convex import --deployment "$DEPLOYMENT" --replace-all -y seed.zip
+          pnpm exec convex run --deployment "$DEPLOYMENT" init
+
+      # The Worker gets the development instance's secret key from the preview deployment's env (the Convex
+      # project's default preview variables). The first run creates the Worker and its workers.dev URLs.
+      - name: Upload the preview version
+        id: upload
+        env:
+          DEPLOYMENT: ${{ steps.convex.outputs.name }}
+        run: |
+          set -euo pipefail
+          pnpm exec convex env get --deployment "$DEPLOYMENT" CLERK_SECRET_KEY |
+            pnpm exec wrangler secret put CLERK_SECRET_KEY --env preview
+          pnpm exec wrangler triggers deploy --env preview
+          pnpm exec wrangler versions upload --env preview --preview-alias "pr-$PR" \
+            --message "PR #$PR ${HEAD_SHA::7}" | tee upload.log
+          url="$(grep -oE 'https://pr-[^ ]+\.workers\.dev' upload.log | head -1)"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          # Sign-in links and invitation emails point at the preview.
+          pnpm exec convex env set --deployment "$DEPLOYMENT" SITE_URL "$url"
+
+      - name: Comment the preview URL
+        if: ${{ steps.upload.outputs.url }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          URL: ${{ steps.upload.outputs.url }}
+        run: |
+          gh pr comment "$PR" --edit-last --create-if-none --body "Preview for ${HEAD_SHA::7}: $URL"

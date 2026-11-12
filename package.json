@@ -4,12 +4,10 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "convex dev --start \"vite dev --host 0.0.0.0\"",
-		"dev:web": "vite dev --host 0.0.0.0",
+		"dev": "node scripts/dev.mjs",
 		"build": "vite build",
 		"preview": "vite preview",
 		"release": "node scripts/release.mjs",
-		"sign-in": "node scripts/sign-in.mjs",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p src/convex/tsconfig.json --noEmit",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",

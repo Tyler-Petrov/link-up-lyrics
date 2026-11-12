@@ -2,7 +2,8 @@
 	import '../app.css';
 	import { browser } from '$app/env';
 	import { onNavigate } from '$app/navigation';
-	import { page } from '$app/state';
+	import { page, updated } from '$app/state';
+	import { on } from 'svelte/events';
 	import { MediaQuery } from 'svelte/reactivity';
 	import { ModeWatcher, mode } from 'mode-watcher';
 	import { setupConvex } from 'convex-svelte';
@@ -11,6 +12,7 @@
 	import { api } from '#convex/_generated/api.js';
 	import { createWatchedWebSocket } from '#lib/connection.svelte.js';
 	import { setConvexQueryCache } from '#lib/convex-query.svelte.js';
+	import { noteOutdatedPageError, outdatedPageNeedsReload } from '#lib/outdated-page.svelte.js';
 	import { reduced } from '#lib/motion.js';
 	import ConvexClerkSetup from '#lib/components/convex-clerk-setup.svelte';
 	import ConfirmationDialog from '#lib/components/confirmation-dialog.svelte';
@@ -30,6 +32,27 @@
 	});
 	// Not boilerplate: dedupes convexQuery subscriptions across components (plan §11).
 	setConvexQueryCache(new Map());
+
+	/*
+	 * Outdated pages reload themselves. The deploy workflow records each release once it's live
+	 * (client_reload.ts), so `updated` checks right away instead of at its next poll. A page that hits an error
+	 * from before the release (a Convex function it calls is gone, a code file it loads was replaced) reloads once
+	 * the new version is live, and a tab someone comes back to reloads if a release went out meanwhile.
+	 */
+	$effect(() => {
+		let seen: number | null | undefined;
+		return client.onUpdate(api.client_reload.latestRelease, {}, (latest) => {
+			if (seen !== undefined && latest !== seen) void updated.check();
+			seen = latest;
+		});
+	});
+	$effect(() => on(window, 'unhandledrejection', ({ reason }) => void noteOutdatedPageError(reason)));
+	$effect(() => {
+		if (outdatedPageNeedsReload()) location.reload();
+	});
+	async function reloadOutdatedReturningTab() {
+		if (!document.hidden && (await updated.check())) location.reload();
+	}
 
 	/*
 	 * The browser chrome's colour: the page's background, and the near-black .stage on /live and the projector
@@ -114,6 +137,8 @@
 	 */
 	const wide = new MediaQuery('min-width: 64rem');
 </script>
+
+<svelte:document onvisibilitychange={reloadOutdatedReturningTab} />
 
 <svelte:head>
 	<title>Link Up Lyrics</title>

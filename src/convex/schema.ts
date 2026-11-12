@@ -146,5 +146,8 @@ export default defineSchema({
 		usedEpoch: epoch()
 	})
 		.index('by_ownerId_and_usedEpoch', ['ownerId', 'usedEpoch'])
-		.index('by_jamSessionId_and_usedEpoch', ['jamSessionId', 'usedEpoch'])
+		.index('by_jamSessionId_and_usedEpoch', ['jamSessionId', 'usedEpoch']),
+
+	/* One row per production release, written once it's live (client_reload.ts), so open pages check right away. */
+	FrontendRelease: defineTable({})
 });

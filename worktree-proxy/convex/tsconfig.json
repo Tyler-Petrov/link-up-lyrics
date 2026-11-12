@@ -1,0 +1,20 @@
+{
+	/* The environment Convex functions run in, used to typecheck them. */
+	"compilerOptions": {
+		"strict": true,
+		"skipLibCheck": true,
+		"moduleResolution": "Bundler",
+		"allowJs": true,
+		"noUncheckedIndexedAccess": true,
+
+		/* These compiler options are required by Convex */
+		"target": "ESNext",
+		"lib": ["ESNext", "dom"],
+		"forceConsistentCasingInFileNames": true,
+		"module": "ESNext",
+		"isolatedModules": true,
+		"noEmit": true
+	},
+	"include": ["./**/*"],
+	"exclude": ["./_generated"]
+}

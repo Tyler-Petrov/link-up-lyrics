@@ -4,8 +4,8 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-	// Reachable over Tailscale, like meal-tracker and Jairus.
-	server: { allowedHosts: ['cachybox.mara-banfish.ts.net'] },
+	// Every interface, so the dev server's Tailscale URLs reach it (scripts/dev-service.mjs).
+	server: { host: true, allowedHosts: ['.ts.net'] },
 	plugins: [
 		tailwindcss(),
 		sveltekit({
@@ -15,7 +15,9 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true,
 				experimental: { async: true }
 			},
-			adapter: adapter()
+			adapter: adapter(),
+			// Open pages notice a release within five minutes, or right away (src/convex/client_reload.ts).
+			version: { pollInterval: 5 * 60_000 }
 		})
 	]
 });

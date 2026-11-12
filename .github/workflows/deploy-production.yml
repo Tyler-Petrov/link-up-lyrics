@@ -160,3 +160,9 @@ jobs:
           pnpm exec wrangler versions deploy "$VERSION_ID@100%" \
             --message "$GITHUB_SHA" \
             --yes
+
+      # Open pages check for the new version right away instead of at their next poll (src/convex/client_reload.ts).
+      - name: Tell open pages about the release
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+        run: pnpm exec convex run client_reload:released --prod

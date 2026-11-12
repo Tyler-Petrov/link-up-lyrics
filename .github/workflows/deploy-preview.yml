@@ -68,19 +68,21 @@ jobs:
           pnpm exec convex import --deployment "$DEPLOYMENT" --replace-all -y seed.zip
           pnpm exec convex run --deployment "$DEPLOYMENT" init
 
-      # The Worker gets the development instance's secret key from the preview deployment's env (the Convex
-      # project's default preview variables). The first run creates the Worker and its workers.dev URLs.
+      # Each version carries the development instance's secret key, read from the preview deployment's env (the
+      # Convex project's default preview variables). The Worker itself and its workers.dev URLs were set up once
+      # (`wrangler triggers deploy --env preview`).
       - name: Upload the preview version
         id: upload
         env:
           DEPLOYMENT: ${{ steps.convex.outputs.name }}
         run: |
           set -euo pipefail
-          pnpm exec convex env get --deployment "$DEPLOYMENT" CLERK_SECRET_KEY |
-            pnpm exec wrangler secret put CLERK_SECRET_KEY --env preview
-          pnpm exec wrangler triggers deploy --env preview
+          secrets="$RUNNER_TEMP/secrets.json"
+          (umask 077 && pnpm exec convex env get --deployment "$DEPLOYMENT" CLERK_SECRET_KEY |
+            jq -Rn '{CLERK_SECRET_KEY: input}' > "$secrets")
           pnpm exec wrangler versions upload --env preview --preview-alias "pr-$PR" \
-            --message "PR #$PR ${HEAD_SHA::7}" | tee upload.log
+            --secrets-file "$secrets" --message "PR #$PR ${HEAD_SHA::7}" | tee upload.log
+          rm "$secrets"
           url="$(grep -oE 'https://pr-[^ ]+\.workers\.dev' upload.log | head -1)"
           echo "url=$url" >> "$GITHUB_OUTPUT"
           # Sign-in links and invitation emails point at the preview.

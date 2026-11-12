@@ -2,7 +2,7 @@
 	import AudioLines from '@lucide/svelte/icons/audio-lines';
 	import type { Spelling } from '#convex/constants.js';
 	import type { Doc } from '#convex/_generated/dataModel.js';
-	import { hasChords, lineText, type ArrangementBlock } from '#lib/chart/index.js';
+	import { hasChords, lineText, type ArrangementBlock } from '#convex/shared/chart/index.js';
 	import ChartLine from '#lib/components/chart/chart-line.svelte';
 	import { cn } from '#lib/utils.js';
 

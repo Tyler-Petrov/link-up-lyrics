@@ -5,7 +5,7 @@
 	import ListMusic from '@lucide/svelte/icons/list-music';
 	import type { FunctionReturnType } from 'convex/server';
 	import { api } from '#convex/_generated/api.js';
-	import { groupArrangement, keySpelling, type ChartGroup } from '#lib/chart/index.js';
+	import { groupArrangement, keySpelling, type ChartGroup } from '#convex/shared/chart/index.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
 	import { appear } from '#lib/motion.js';
 	import ChartGroupView from '#lib/components/live/chart-group.svelte';

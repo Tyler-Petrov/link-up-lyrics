@@ -9,7 +9,7 @@
  * interlude; "Amazing Grace" groups its verses two lines at a time.
  */
 import { v } from 'convex/values';
-import { parseSongText } from '#lib/chart/index.js';
+import { parseSongText } from '#convex/shared/chart/index.js';
 import { internalMutation } from './functions';
 import { insertParsedSong } from './model/song';
 

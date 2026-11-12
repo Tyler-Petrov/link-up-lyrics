@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Spelling } from '#convex/constants.js';
 	import type { ChartCharacter } from '#convex/validators.js';
-	import { chartWords, formatChord, hasChords, isInstrumental } from '#lib/chart/index.js';
+	import { chartWords, formatChord, hasChords, isInstrumental } from '#convex/shared/chart/index.js';
 	import { cn } from '#lib/utils.js';
 
 	type Props = {

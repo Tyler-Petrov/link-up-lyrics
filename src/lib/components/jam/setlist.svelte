@@ -7,7 +7,7 @@
 	import Trash from '@lucide/svelte/icons/trash-2';
 	import { api } from '#convex/_generated/api.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
-	import { keyName, transposeKey } from '#lib/chart/index.js';
+	import { keyName, transposeKey } from '#convex/shared/chart/index.js';
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import { reveal } from '#lib/motion.js';
 	import { sortable } from '#lib/sortable.js';

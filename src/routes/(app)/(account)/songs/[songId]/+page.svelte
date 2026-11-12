@@ -5,7 +5,7 @@
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { api } from '#convex/_generated/api.js';
 	import { constantByTag } from '#convex/constants.js';
-	import { keySpelling } from '#lib/chart/index.js';
+	import { keySpelling } from '#convex/shared/chart/index.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
 	import { reduced } from '#lib/motion.js';
 	import SongChart from '#lib/components/chart/song-chart.svelte';

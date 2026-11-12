@@ -17,6 +17,6 @@
 		"isolatedModules": true,
 		"noEmit": true
 	},
-	"include": ["./**/*", "../lib/chart/**/*", "../types.d.ts"],
+	"include": ["./**/*", "../types.d.ts"],
 	"exclude": ["./_generated"]
 }

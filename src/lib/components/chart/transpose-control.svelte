@@ -2,7 +2,7 @@
 	import Minus from '@lucide/svelte/icons/minus';
 	import Plus from '@lucide/svelte/icons/plus';
 	import type { MusicalKeyTag } from '#convex/constants.js';
-	import { keyName, transposeKey } from '#lib/chart/index.js';
+	import { keyName, transposeKey } from '#convex/shared/chart/index.js';
 	import { Button } from '#lib/components/ui/button/index.js';
 
 	/** Semitones up (positive) or down, kept within an octave. Shows the resulting key when the song has one. */

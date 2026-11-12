@@ -3,7 +3,7 @@
 	import LocateFixed from '@lucide/svelte/icons/locate-fixed';
 	import type { Spelling } from '#convex/constants.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
-	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
+	import type { ArrangementBlock, ChartGroup } from '#convex/shared/chart/index.js';
 	import { appear, ms } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 	import ChartGroupView from './chart-group.svelte';

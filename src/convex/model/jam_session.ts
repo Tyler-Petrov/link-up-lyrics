@@ -1,4 +1,4 @@
-import { groupArrangement } from '#lib/chart/index.js';
+import { groupArrangement } from '#convex/shared/chart/index.js';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 import { loadArrangement } from './song';

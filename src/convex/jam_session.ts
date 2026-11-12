@@ -10,7 +10,7 @@ import { jamSessionRole, requireJamSessionRole, requireSongOwner } from './model
 import { requireCanHost } from './model/billing';
 import { focusPatch, groupCount, loadSetlist, MAX_ITEMS } from './model/jam_session';
 import { presence } from './components';
-import { fitsBetween, orderBetween } from '#lib/chart/index.js';
+import { fitsBetween, orderBetween } from '#convex/shared/chart/index.js';
 import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 

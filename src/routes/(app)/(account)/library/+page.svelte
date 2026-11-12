@@ -3,7 +3,7 @@
 	import LoaderCircle from '@lucide/svelte/icons/loader-circle';
 	import Search from '@lucide/svelte/icons/search';
 	import { api } from '#convex/_generated/api.js';
-	import { keyName } from '#lib/chart/index.js';
+	import { keyName } from '#convex/shared/chart/index.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
 	import { appear, glide } from '#lib/motion.js';
 	import { Input } from '#lib/components/ui/input/index.js';

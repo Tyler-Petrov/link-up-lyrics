@@ -3,7 +3,7 @@
 	import WifiOff from '@lucide/svelte/icons/wifi-off';
 	import { api } from '#convex/_generated/api.js';
 	import type { Id } from '#convex/_generated/dataModel.js';
-	import { groupArrangement, keySpelling } from '#lib/chart/index.js';
+	import { groupArrangement, keySpelling } from '#convex/shared/chart/index.js';
 	import { useConnection } from '#lib/connection.svelte.js';
 	import { convexQuery } from '#lib/convex-query.svelte.js';
 	import { appear } from '#lib/motion.js';

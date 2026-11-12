@@ -1,10 +1,10 @@
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { existsSync, ftruncateSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { ftruncateSync, mkdirSync, rmSync } from 'node:fs';
 import { connect, createServer } from 'node:net';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
-import { parseEnv, promisify, stripVTControlCharacters } from 'node:util';
+import { promisify, stripVTControlCharacters } from 'node:util';
 
 // What this project's dev server runs: Convex plus the SvelteKit app, which
 // listens on every interface (vite.config.ts) for the Tailscale URLs.
@@ -19,9 +19,6 @@ export const deploymentReadyMarker = '.convex-deployment-ready';
 // `pnpm dev sign-in` and the screen's Sign in button: src/convex/dev.ts makes
 // the link and src/routes/sign-in-token/[token] redeems it.
 export const signIn = { frontend: 'web', convexFunction: 'dev:createSignInLink' };
-// The worktree proxy (worktree-proxy/), where the Clerk development instance
-// sends its webhooks.
-const worktreeProxyUrl = 'https://vibrant-caribou-207.convex.site';
 
 // A worktree's dev server runs in the background: Convex plus the frontends
 // asked for so far. Every `pnpm dev` watches it over this socket, and it stops
@@ -182,93 +179,6 @@ export async function createSignInLink(root, state, { userId, path = '/' } = {})
 	return new URL(`${link.pathname}${link.search}`, urls.https ?? urls.tailscale ?? urls.local).href;
 }
 
-// Webhook senders point at worktree-proxy/, which forwards to every
-// deployment holding a lease. Keep one while this dev server runs; the proxy
-// drops it within two minutes if renewal stops. A path this deployment claims
-// goes only here until another worktree claims it or the lease ends.
-// `onClaims` runs whenever the proxy reports the claimed paths.
-function leaseWorktreeProxy(root, warn, onClaims) {
-	const environment = existsSync(join(root, '.env.local'))
-		? parseEnv(readFileSync(join(root, '.env.local'), 'utf8'))
-		: {};
-	// Pulled from the Convex project's default dev environment variables by
-	// the worktree setup.
-	const secret = environment.WORKTREE_PROXY_SECRET;
-	if (!secret) {
-		const missing = () =>
-			warn(
-				"WORKTREE_PROXY_SECRET is missing from .env.local (rerun `. scripts/worktree-setup.sh`), so webhooks won't reach this deployment.\n"
-			);
-		missing();
-		return {
-			claims: [],
-			claim: async () => missing(),
-			unclaim: async () => missing(),
-			release: async () => {}
-		};
-	}
-	const deployment = environment.CONVEX_DEPLOYMENT?.replace(/^dev:/, '').replace(/\s.*/, '');
-	let failing = false;
-	// Chained so a renewal still in flight can't land after the release.
-	let previous = Promise.resolve();
-	// Resolves to the paths this deployment claims, or undefined on failure.
-	const request = (method, endpoint) =>
-		(previous = previous.then(() =>
-			fetch(`${worktreeProxyUrl}/worktree-proxy${endpoint}`, {
-				method,
-				headers: { Authorization: `Bearer ${secret}` },
-				body: JSON.stringify({ deployment }),
-				signal: AbortSignal.timeout(5_000)
-			})
-				.then(async (response) => {
-					if (!response.ok) throw new Error(`${response.status} ${await response.text()}`);
-					failing = false;
-					return (await response.json()).routes;
-				})
-				.catch((error) => {
-					// Renewals repeat, so only the first of a run of failures is reported.
-					if (!failing || endpoint !== '/lease') {
-						warn(
-							`Worktree proxy ${method} ${endpoint} failed, so webhooks may not reach this deployment: ${error.message}\n`
-						);
-					}
-					failing = true;
-				})
-		));
-
-	let claims = [];
-	// A claim another worktree took, or that lapsed with the lease, shows up as
-	// a path missing from the proxy's list.
-	const update = (routes, unclaimed) => {
-		if (!routes) return;
-		for (const route of claims) {
-			if (route !== unclaimed && !routes.includes(route)) {
-				warn(
-					`The claim on ${route} is no longer active: another worktree claimed it, or this lease lapsed.\n`
-				);
-			}
-		}
-		claims = routes;
-		onClaims();
-	};
-
-	// Drop a lease and claims a crashed run left behind; a new run claims again.
-	request('DELETE', '/lease');
-	request('POST', '/lease');
-	const renewal = setInterval(() => request('POST', '/lease').then(update), 30_000);
-	return {
-		get claims() {
-			return claims;
-		},
-		claim: (path) => request('POST', `/claim${path}`).then(update),
-		unclaim: (path) => request('DELETE', `/claim${path}`).then((routes) => update(routes, path)),
-		release() {
-			clearInterval(renewal);
-			return request('DELETE', '/lease');
-		}
-	};
-}
-
 export async function runService(root, { noTypecheck }) {
 	const watchers = new Set();
 	let history = '';
@@ -295,9 +205,7 @@ export async function runService(root, { noTypecheck }) {
 		startedAt,
 		restarting,
 		watchers: watchers.size,
-		frontends: [...running].map(([key, { name, port, urls }]) => ({ key, name, port, urls })),
-		// Webhook paths the worktree proxy sends only to this deployment.
-		claims: worktreeProxy.claims
+		frontends: [...running].map(([key, { name, port, urls }]) => ({ key, name, port, urls }))
 	});
 	const broadcastState = () => {
 		const current = state();
@@ -427,8 +335,6 @@ export async function runService(root, { noTypecheck }) {
 	let queue = Promise.resolve();
 	const enqueue = (task) => (queue = queue.then(task));
 
-	let worktreeProxy;
-
 	// A crash exits 1 and an intentional or idle stop 0. Watchers exit with
 	// the same code, so agents can tell the environment failed.
 	async function shutDown(exitCode = 0) {
@@ -436,7 +342,6 @@ export async function runService(root, { noTypecheck }) {
 		shuttingDown = true;
 		emit('Stopping the dev server.\n');
 		await stopChildren();
-		await worktreeProxy.release();
 		for (const watcher of watchers) {
 			send(watcher, { type: 'stopped', exitCode });
 			watcher.end();
@@ -483,12 +388,6 @@ export async function runService(root, { noTypecheck }) {
 			}
 			if (message.type === 'add') enqueue(() => addFrontends(message.frontends));
 			if (message.type === 'restart') enqueue(restart);
-			// Answered with the state once the proxy replies, for `pnpm dev claim`.
-			if (message.type === 'claim' || message.type === 'unclaim') {
-				worktreeProxy[message.type](message.path).then(() =>
-					send(socket, { type: 'state', state: state() })
-				);
-			}
 			if (message.type === 'stop') shutDown();
 		});
 	});
@@ -545,7 +444,6 @@ export async function runService(root, { noTypecheck }) {
 		signalChildren('SIGKILL');
 		if (server.listening) server.close();
 	});
-	worktreeProxy = leaseWorktreeProxy(root, emit, broadcastState);
 	startConvex();
 	scheduleIdleStop();
 	markUsed();

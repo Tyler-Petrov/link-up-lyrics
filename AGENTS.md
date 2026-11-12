@@ -26,11 +26,9 @@ If any data needs to be migrated, make sure it runs automatically after deploy. 
 
 Work in a T3 Code worktree per task. Its setup (`. scripts/worktree-setup.sh`) installs dependencies and gives the branch its own Convex dev deployment, which expires after 14 days: it pushes the functions, imports `seed.zip`, runs `init`, and writes `.env.local`. Rerunning it resets the data to the seed. Secrets come from the Convex project's default dev environment variables (`pnpm exec convex env default list --type dev`), so change them there.
 
-`pnpm dev` starts the worktree's dev server in the background (Convex plus Vite on a free port) and prints its local and Tailscale URLs. Its output is in `.dev-server.log`. `pnpm dev --help` lists the rest: `restart`, `stop`, `servers`, `sign-in`, `claim`.
+`pnpm dev` starts the worktree's dev server in the background (Convex plus Vite on a free port) and prints its local and Tailscale URLs. Its output is in `.dev-server.log`. `pnpm dev --help` lists the rest: `restart`, `stop`, `servers`, `sign-in`.
 
 `seed.zip` is the data every new deployment starts with. When the schema changes, the pre-commit hook blocks the commit until `pnpm seed:update` re-exports the seed from your worktree's deployment, so migrate that deployment's data first. Keep seed data synthetic: the repo is public.
-
-Webhooks from the Clerk development instance go to the worktree proxy (`worktree-proxy/`, its own Convex project), which sends each one to every running dev server. `pnpm dev claim <path>` sends a path only to your worktree. Deploy the proxy with `pnpm --filter worktree-proxy deploy` after changing it.
 
 ## Signing in to test
 

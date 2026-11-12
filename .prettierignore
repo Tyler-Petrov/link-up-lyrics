@@ -7,3 +7,5 @@ pnpm-lock.yaml
 /.claude/
 skills-lock.json
 /worktree-proxy/convex/_generated/
+# Written by pnpm seed:update
+seed-schema.json

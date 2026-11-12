@@ -1,959 +1,959 @@
 {
-	"FrontendRelease": {
-		"type": "object",
-		"value": {}
-	},
-	"JamSession": {
-		"type": "object",
-		"value": {
-			"name": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": false
-			},
-			"ownerId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "User"
-				},
-				"optional": false
-			},
-			"isLive": {
-				"fieldType": {
-					"type": "boolean"
-				},
-				"optional": false
-			},
-			"focusedItemId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "JamSessionItem"
-				},
-				"optional": true
-			},
-			"focusedGroupIndex": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"focusedEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			}
-		}
-	},
-	"JamSessionItem": {
-		"type": "object",
-		"value": {
-			"jamSessionId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "JamSession"
-				},
-				"optional": false
-			},
-			"contentRef": {
-				"fieldType": {
-					"type": "object",
-					"value": {
-						"type": {
-							"fieldType": {
-								"type": "literal",
-								"value": "Song"
-							},
-							"optional": false
-						},
-						"_id": {
-							"fieldType": {
-								"type": "id",
-								"tableName": "Song"
-							},
-							"optional": false
-						}
-					}
-				},
-				"optional": false
-			},
-			"order": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			},
-			"transposeSemitones": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			}
-		}
-	},
-	"JamSessionMember": {
-		"type": "object",
-		"value": {
-			"jamSessionId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "JamSession"
-				},
-				"optional": false
-			},
-			"userId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "User"
-				},
-				"optional": true
-			},
-			"invitedEmail": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"statusTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "invited"
-						},
-						{
-							"type": "literal",
-							"value": "accepted"
-						},
-						{
-							"type": "literal",
-							"value": "declined"
-						},
-						{
-							"type": "literal",
-							"value": "removed"
-						}
-					]
-				},
-				"optional": false
-			},
-			"roleTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "player"
-						},
-						{
-							"type": "literal",
-							"value": "leader"
-						},
-						{
-							"type": "literal",
-							"value": "owner"
-						}
-					]
-				},
-				"optional": false
-			},
-			"invitedByUserId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "User"
-				},
-				"optional": false
-			},
-			"invitedEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			},
-			"respondedEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			}
-		}
-	},
-	"Song": {
-		"type": "object",
-		"value": {
-			"title": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": false
-			},
-			"artist": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"ownerId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "User"
-				},
-				"optional": false
-			},
-			"originalKeyTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "c"
-						},
-						{
-							"type": "literal",
-							"value": "cSharp"
-						},
-						{
-							"type": "literal",
-							"value": "d"
-						},
-						{
-							"type": "literal",
-							"value": "dSharp"
-						},
-						{
-							"type": "literal",
-							"value": "dFlat"
-						},
-						{
-							"type": "literal",
-							"value": "e"
-						},
-						{
-							"type": "literal",
-							"value": "eFlat"
-						},
-						{
-							"type": "literal",
-							"value": "f"
-						},
-						{
-							"type": "literal",
-							"value": "fSharp"
-						},
-						{
-							"type": "literal",
-							"value": "g"
-						},
-						{
-							"type": "literal",
-							"value": "gSharp"
-						},
-						{
-							"type": "literal",
-							"value": "gFlat"
-						},
-						{
-							"type": "literal",
-							"value": "a"
-						},
-						{
-							"type": "literal",
-							"value": "aSharp"
-						},
-						{
-							"type": "literal",
-							"value": "aFlat"
-						},
-						{
-							"type": "literal",
-							"value": "b"
-						},
-						{
-							"type": "literal",
-							"value": "bFlat"
-						},
-						{
-							"type": "literal",
-							"value": "cMinor"
-						},
-						{
-							"type": "literal",
-							"value": "cSharpMinor"
-						},
-						{
-							"type": "literal",
-							"value": "dMinor"
-						},
-						{
-							"type": "literal",
-							"value": "dSharpMinor"
-						},
-						{
-							"type": "literal",
-							"value": "dFlatMinor"
-						},
-						{
-							"type": "literal",
-							"value": "eMinor"
-						},
-						{
-							"type": "literal",
-							"value": "eFlatMinor"
-						},
-						{
-							"type": "literal",
-							"value": "fMinor"
-						},
-						{
-							"type": "literal",
-							"value": "fSharpMinor"
-						},
-						{
-							"type": "literal",
-							"value": "gMinor"
-						},
-						{
-							"type": "literal",
-							"value": "gSharpMinor"
-						},
-						{
-							"type": "literal",
-							"value": "gFlatMinor"
-						},
-						{
-							"type": "literal",
-							"value": "aMinor"
-						},
-						{
-							"type": "literal",
-							"value": "aSharpMinor"
-						},
-						{
-							"type": "literal",
-							"value": "aFlatMinor"
-						},
-						{
-							"type": "literal",
-							"value": "bMinor"
-						},
-						{
-							"type": "literal",
-							"value": "bFlatMinor"
-						}
-					]
-				},
-				"optional": true
-			},
-			"capo": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"copyrightSourceTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "unknown"
-						},
-						{
-							"type": "literal",
-							"value": "publicDomain"
-						},
-						{
-							"type": "literal",
-							"value": "original"
-						},
-						{
-							"type": "literal",
-							"value": "ccli"
-						},
-						{
-							"type": "literal",
-							"value": "otherLicense"
-						}
-					]
-				},
-				"optional": false
-			},
-			"ccliSongNumber": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"copyrightLine": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"songwriters": {
-				"fieldType": {
-					"type": "array",
-					"value": {
-						"type": "string"
-					}
-				},
-				"optional": false
-			},
-			"updatedEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			}
-		}
-	},
-	"SongLine": {
-		"type": "object",
-		"value": {
-			"parentRef": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "object",
-							"value": {
-								"type": {
-									"fieldType": {
-										"type": "literal",
-										"value": "Song"
-									},
-									"optional": false
-								},
-								"_id": {
-									"fieldType": {
-										"type": "id",
-										"tableName": "Song"
-									},
-									"optional": false
-								}
-							}
-						},
-						{
-							"type": "object",
-							"value": {
-								"type": {
-									"fieldType": {
-										"type": "literal",
-										"value": "SongSection"
-									},
-									"optional": false
-								},
-								"_id": {
-									"fieldType": {
-										"type": "id",
-										"tableName": "SongSection"
-									},
-									"optional": false
-								}
-							}
-						}
-					]
-				},
-				"optional": false
-			},
-			"songId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "Song"
-				},
-				"optional": false
-			},
-			"order": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			},
-			"kindTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "lyric"
-						},
-						{
-							"type": "literal",
-							"value": "comment"
-						}
-					]
-				},
-				"optional": false
-			},
-			"characters": {
-				"fieldType": {
-					"type": "array",
-					"value": {
-						"type": "object",
-						"value": {
-							"character": {
-								"fieldType": {
-									"type": "string"
-								},
-								"optional": false
-							},
-							"chord": {
-								"fieldType": {
-									"type": "object",
-									"value": {
-										"rootTag": {
-											"fieldType": {
-												"type": "union",
-												"value": [
-													{
-														"type": "literal",
-														"value": "c"
-													},
-													{
-														"type": "literal",
-														"value": "d"
-													},
-													{
-														"type": "literal",
-														"value": "e"
-													},
-													{
-														"type": "literal",
-														"value": "f"
-													},
-													{
-														"type": "literal",
-														"value": "g"
-													},
-													{
-														"type": "literal",
-														"value": "a"
-													},
-													{
-														"type": "literal",
-														"value": "b"
-													}
-												]
-											},
-											"optional": false
-										},
-										"accidentalTag": {
-											"fieldType": {
-												"type": "union",
-												"value": [
-													{
-														"type": "literal",
-														"value": "natural"
-													},
-													{
-														"type": "literal",
-														"value": "sharp"
-													},
-													{
-														"type": "literal",
-														"value": "flat"
-													}
-												]
-											},
-											"optional": false
-										},
-										"qualityTag": {
-											"fieldType": {
-												"type": "union",
-												"value": [
-													{
-														"type": "literal",
-														"value": "major"
-													},
-													{
-														"type": "literal",
-														"value": "minor"
-													},
-													{
-														"type": "literal",
-														"value": "dominant7"
-													},
-													{
-														"type": "literal",
-														"value": "major7"
-													},
-													{
-														"type": "literal",
-														"value": "minor7"
-													},
-													{
-														"type": "literal",
-														"value": "sixth"
-													},
-													{
-														"type": "literal",
-														"value": "ninth"
-													},
-													{
-														"type": "literal",
-														"value": "sus2"
-													},
-													{
-														"type": "literal",
-														"value": "sus4"
-													},
-													{
-														"type": "literal",
-														"value": "dominant7sus4"
-													},
-													{
-														"type": "literal",
-														"value": "add9"
-													},
-													{
-														"type": "literal",
-														"value": "diminished"
-													},
-													{
-														"type": "literal",
-														"value": "diminished7"
-													},
-													{
-														"type": "literal",
-														"value": "halfDiminished"
-													},
-													{
-														"type": "literal",
-														"value": "augmented"
-													},
-													{
-														"type": "literal",
-														"value": "power"
-													},
-													{
-														"type": "literal",
-														"value": "noChord"
-													}
-												]
-											},
-											"optional": false
-										},
-										"bassRootTag": {
-											"fieldType": {
-												"type": "union",
-												"value": [
-													{
-														"type": "literal",
-														"value": "c"
-													},
-													{
-														"type": "literal",
-														"value": "d"
-													},
-													{
-														"type": "literal",
-														"value": "e"
-													},
-													{
-														"type": "literal",
-														"value": "f"
-													},
-													{
-														"type": "literal",
-														"value": "g"
-													},
-													{
-														"type": "literal",
-														"value": "a"
-													},
-													{
-														"type": "literal",
-														"value": "b"
-													}
-												]
-											},
-											"optional": true
-										},
-										"bassAccidentalTag": {
-											"fieldType": {
-												"type": "union",
-												"value": [
-													{
-														"type": "literal",
-														"value": "natural"
-													},
-													{
-														"type": "literal",
-														"value": "sharp"
-													},
-													{
-														"type": "literal",
-														"value": "flat"
-													}
-												]
-											},
-											"optional": true
-										}
-									}
-								},
-								"optional": true
-							}
-						}
-					}
-				},
-				"optional": false
-			},
-			"startsGroup": {
-				"fieldType": {
-					"type": "boolean"
-				},
-				"optional": true
-			}
-		}
-	},
-	"SongSection": {
-		"type": "object",
-		"value": {
-			"songId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "Song"
-				},
-				"optional": false
-			},
-			"name": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": false
-			},
-			"kindTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "lyrics"
-						},
-						{
-							"type": "literal",
-							"value": "interlude"
-						}
-					]
-				},
-				"optional": false
-			},
-			"order": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			},
-			"repeatOfId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "SongSection"
-				},
-				"optional": true
-			}
-		}
-	},
-	"SongUsage": {
-		"type": "object",
-		"value": {
-			"ownerId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "User"
-				},
-				"optional": false
-			},
-			"jamSessionId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "JamSession"
-				},
-				"optional": false
-			},
-			"songId": {
-				"fieldType": {
-					"type": "id",
-					"tableName": "Song"
-				},
-				"optional": false
-			},
-			"title": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": false
-			},
-			"artist": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"ccliSongNumber": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"copyrightSourceTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "unknown"
-						},
-						{
-							"type": "literal",
-							"value": "publicDomain"
-						},
-						{
-							"type": "literal",
-							"value": "original"
-						},
-						{
-							"type": "literal",
-							"value": "ccli"
-						},
-						{
-							"type": "literal",
-							"value": "otherLicense"
-						}
-					]
-				},
-				"optional": true
-			},
-			"copyrightLine": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"usedEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": false
-			}
-		}
-	},
-	"User": {
-		"type": "object",
-		"value": {
-			"clerkUserId": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": false
-			},
-			"name": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": false
-			},
-			"email": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"imageUrl": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"planTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "none"
-						},
-						{
-							"type": "literal",
-							"value": "expired"
-						},
-						{
-							"type": "literal",
-							"value": "trialing"
-						},
-						{
-							"type": "literal",
-							"value": "pro"
-						}
-					]
-				},
-				"optional": false
-			},
-			"paymentStatusTag": {
-				"fieldType": {
-					"type": "union",
-					"value": [
-						{
-							"type": "literal",
-							"value": "current"
-						},
-						{
-							"type": "literal",
-							"value": "pastDue"
-						}
-					]
-				},
-				"optional": false
-			},
-			"pastDueSinceEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"graceEndsEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"paymentFailureReason": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"billingEventEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"trialEndsEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"compedUntilEpoch": {
-				"fieldType": {
-					"type": "number"
-				},
-				"optional": true
-			},
-			"compReason": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			},
-			"ccliLicenseNumber": {
-				"fieldType": {
-					"type": "string"
-				},
-				"optional": true
-			}
-		}
-	}
+  "FrontendRelease": {
+    "type": "object",
+    "value": {}
+  },
+  "JamSession": {
+    "type": "object",
+    "value": {
+      "name": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": false
+      },
+      "ownerId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "User"
+        },
+        "optional": false
+      },
+      "isLive": {
+        "fieldType": {
+          "type": "boolean"
+        },
+        "optional": false
+      },
+      "focusedItemId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "JamSessionItem"
+        },
+        "optional": true
+      },
+      "focusedGroupIndex": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "focusedEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      }
+    }
+  },
+  "JamSessionItem": {
+    "type": "object",
+    "value": {
+      "jamSessionId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "JamSession"
+        },
+        "optional": false
+      },
+      "contentRef": {
+        "fieldType": {
+          "type": "object",
+          "value": {
+            "type": {
+              "fieldType": {
+                "type": "literal",
+                "value": "Song"
+              },
+              "optional": false
+            },
+            "_id": {
+              "fieldType": {
+                "type": "id",
+                "tableName": "Song"
+              },
+              "optional": false
+            }
+          }
+        },
+        "optional": false
+      },
+      "order": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      },
+      "transposeSemitones": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      }
+    }
+  },
+  "JamSessionMember": {
+    "type": "object",
+    "value": {
+      "jamSessionId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "JamSession"
+        },
+        "optional": false
+      },
+      "userId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "User"
+        },
+        "optional": true
+      },
+      "invitedEmail": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "statusTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "invited"
+            },
+            {
+              "type": "literal",
+              "value": "accepted"
+            },
+            {
+              "type": "literal",
+              "value": "declined"
+            },
+            {
+              "type": "literal",
+              "value": "removed"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "roleTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "player"
+            },
+            {
+              "type": "literal",
+              "value": "leader"
+            },
+            {
+              "type": "literal",
+              "value": "owner"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "invitedByUserId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "User"
+        },
+        "optional": false
+      },
+      "invitedEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      },
+      "respondedEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      }
+    }
+  },
+  "Song": {
+    "type": "object",
+    "value": {
+      "title": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": false
+      },
+      "artist": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "ownerId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "User"
+        },
+        "optional": false
+      },
+      "originalKeyTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "c"
+            },
+            {
+              "type": "literal",
+              "value": "cSharp"
+            },
+            {
+              "type": "literal",
+              "value": "d"
+            },
+            {
+              "type": "literal",
+              "value": "dSharp"
+            },
+            {
+              "type": "literal",
+              "value": "dFlat"
+            },
+            {
+              "type": "literal",
+              "value": "e"
+            },
+            {
+              "type": "literal",
+              "value": "eFlat"
+            },
+            {
+              "type": "literal",
+              "value": "f"
+            },
+            {
+              "type": "literal",
+              "value": "fSharp"
+            },
+            {
+              "type": "literal",
+              "value": "g"
+            },
+            {
+              "type": "literal",
+              "value": "gSharp"
+            },
+            {
+              "type": "literal",
+              "value": "gFlat"
+            },
+            {
+              "type": "literal",
+              "value": "a"
+            },
+            {
+              "type": "literal",
+              "value": "aSharp"
+            },
+            {
+              "type": "literal",
+              "value": "aFlat"
+            },
+            {
+              "type": "literal",
+              "value": "b"
+            },
+            {
+              "type": "literal",
+              "value": "bFlat"
+            },
+            {
+              "type": "literal",
+              "value": "cMinor"
+            },
+            {
+              "type": "literal",
+              "value": "cSharpMinor"
+            },
+            {
+              "type": "literal",
+              "value": "dMinor"
+            },
+            {
+              "type": "literal",
+              "value": "dSharpMinor"
+            },
+            {
+              "type": "literal",
+              "value": "dFlatMinor"
+            },
+            {
+              "type": "literal",
+              "value": "eMinor"
+            },
+            {
+              "type": "literal",
+              "value": "eFlatMinor"
+            },
+            {
+              "type": "literal",
+              "value": "fMinor"
+            },
+            {
+              "type": "literal",
+              "value": "fSharpMinor"
+            },
+            {
+              "type": "literal",
+              "value": "gMinor"
+            },
+            {
+              "type": "literal",
+              "value": "gSharpMinor"
+            },
+            {
+              "type": "literal",
+              "value": "gFlatMinor"
+            },
+            {
+              "type": "literal",
+              "value": "aMinor"
+            },
+            {
+              "type": "literal",
+              "value": "aSharpMinor"
+            },
+            {
+              "type": "literal",
+              "value": "aFlatMinor"
+            },
+            {
+              "type": "literal",
+              "value": "bMinor"
+            },
+            {
+              "type": "literal",
+              "value": "bFlatMinor"
+            }
+          ]
+        },
+        "optional": true
+      },
+      "capo": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "copyrightSourceTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "unknown"
+            },
+            {
+              "type": "literal",
+              "value": "publicDomain"
+            },
+            {
+              "type": "literal",
+              "value": "original"
+            },
+            {
+              "type": "literal",
+              "value": "ccli"
+            },
+            {
+              "type": "literal",
+              "value": "otherLicense"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "ccliSongNumber": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "copyrightLine": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "songwriters": {
+        "fieldType": {
+          "type": "array",
+          "value": {
+            "type": "string"
+          }
+        },
+        "optional": false
+      },
+      "updatedEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      }
+    }
+  },
+  "SongLine": {
+    "type": "object",
+    "value": {
+      "parentRef": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "object",
+              "value": {
+                "type": {
+                  "fieldType": {
+                    "type": "literal",
+                    "value": "Song"
+                  },
+                  "optional": false
+                },
+                "_id": {
+                  "fieldType": {
+                    "type": "id",
+                    "tableName": "Song"
+                  },
+                  "optional": false
+                }
+              }
+            },
+            {
+              "type": "object",
+              "value": {
+                "type": {
+                  "fieldType": {
+                    "type": "literal",
+                    "value": "SongSection"
+                  },
+                  "optional": false
+                },
+                "_id": {
+                  "fieldType": {
+                    "type": "id",
+                    "tableName": "SongSection"
+                  },
+                  "optional": false
+                }
+              }
+            }
+          ]
+        },
+        "optional": false
+      },
+      "songId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "Song"
+        },
+        "optional": false
+      },
+      "order": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      },
+      "kindTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "lyric"
+            },
+            {
+              "type": "literal",
+              "value": "comment"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "characters": {
+        "fieldType": {
+          "type": "array",
+          "value": {
+            "type": "object",
+            "value": {
+              "character": {
+                "fieldType": {
+                  "type": "string"
+                },
+                "optional": false
+              },
+              "chord": {
+                "fieldType": {
+                  "type": "object",
+                  "value": {
+                    "rootTag": {
+                      "fieldType": {
+                        "type": "union",
+                        "value": [
+                          {
+                            "type": "literal",
+                            "value": "c"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "d"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "e"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "f"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "g"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "a"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "b"
+                          }
+                        ]
+                      },
+                      "optional": false
+                    },
+                    "accidentalTag": {
+                      "fieldType": {
+                        "type": "union",
+                        "value": [
+                          {
+                            "type": "literal",
+                            "value": "natural"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "sharp"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "flat"
+                          }
+                        ]
+                      },
+                      "optional": false
+                    },
+                    "qualityTag": {
+                      "fieldType": {
+                        "type": "union",
+                        "value": [
+                          {
+                            "type": "literal",
+                            "value": "major"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "minor"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "dominant7"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "major7"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "minor7"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "sixth"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "ninth"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "sus2"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "sus4"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "dominant7sus4"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "add9"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "diminished"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "diminished7"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "halfDiminished"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "augmented"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "power"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "noChord"
+                          }
+                        ]
+                      },
+                      "optional": false
+                    },
+                    "bassRootTag": {
+                      "fieldType": {
+                        "type": "union",
+                        "value": [
+                          {
+                            "type": "literal",
+                            "value": "c"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "d"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "e"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "f"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "g"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "a"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "b"
+                          }
+                        ]
+                      },
+                      "optional": true
+                    },
+                    "bassAccidentalTag": {
+                      "fieldType": {
+                        "type": "union",
+                        "value": [
+                          {
+                            "type": "literal",
+                            "value": "natural"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "sharp"
+                          },
+                          {
+                            "type": "literal",
+                            "value": "flat"
+                          }
+                        ]
+                      },
+                      "optional": true
+                    }
+                  }
+                },
+                "optional": true
+              }
+            }
+          }
+        },
+        "optional": false
+      },
+      "startsGroup": {
+        "fieldType": {
+          "type": "boolean"
+        },
+        "optional": true
+      }
+    }
+  },
+  "SongSection": {
+    "type": "object",
+    "value": {
+      "songId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "Song"
+        },
+        "optional": false
+      },
+      "name": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": false
+      },
+      "kindTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "lyrics"
+            },
+            {
+              "type": "literal",
+              "value": "interlude"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "order": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      },
+      "repeatOfId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "SongSection"
+        },
+        "optional": true
+      }
+    }
+  },
+  "SongUsage": {
+    "type": "object",
+    "value": {
+      "ownerId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "User"
+        },
+        "optional": false
+      },
+      "jamSessionId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "JamSession"
+        },
+        "optional": false
+      },
+      "songId": {
+        "fieldType": {
+          "type": "id",
+          "tableName": "Song"
+        },
+        "optional": false
+      },
+      "title": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": false
+      },
+      "artist": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "ccliSongNumber": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "copyrightSourceTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "unknown"
+            },
+            {
+              "type": "literal",
+              "value": "publicDomain"
+            },
+            {
+              "type": "literal",
+              "value": "original"
+            },
+            {
+              "type": "literal",
+              "value": "ccli"
+            },
+            {
+              "type": "literal",
+              "value": "otherLicense"
+            }
+          ]
+        },
+        "optional": true
+      },
+      "copyrightLine": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "usedEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": false
+      }
+    }
+  },
+  "User": {
+    "type": "object",
+    "value": {
+      "clerkUserId": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": false
+      },
+      "name": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": false
+      },
+      "email": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "imageUrl": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "planTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "none"
+            },
+            {
+              "type": "literal",
+              "value": "expired"
+            },
+            {
+              "type": "literal",
+              "value": "trialing"
+            },
+            {
+              "type": "literal",
+              "value": "pro"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "paymentStatusTag": {
+        "fieldType": {
+          "type": "union",
+          "value": [
+            {
+              "type": "literal",
+              "value": "current"
+            },
+            {
+              "type": "literal",
+              "value": "pastDue"
+            }
+          ]
+        },
+        "optional": false
+      },
+      "pastDueSinceEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "graceEndsEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "paymentFailureReason": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "billingEventEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "trialEndsEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "compedUntilEpoch": {
+        "fieldType": {
+          "type": "number"
+        },
+        "optional": true
+      },
+      "compReason": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      },
+      "ccliLicenseNumber": {
+        "fieldType": {
+          "type": "string"
+        },
+        "optional": true
+      }
+    }
+  }
 }

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# seed.zip must match the schema it will be imported into.
+pnpm run --silent seed:check

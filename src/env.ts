@@ -4,18 +4,18 @@ export const variables = defineEnvVars({
 	PUBLIC_CONVEX_URL: {
 		public: true,
 		static: true,
-		description: 'Convex deployment URL, written to .env.local by `convex dev`'
+		description: "Convex deployment URL, written to .env.local by the worktree setup (the branch's own deployment)"
 	},
 	PUBLIC_CONVEX_SITE_URL: {
 		public: true,
 		static: true,
 		description:
-			'Convex HTTP actions URL (webhooks, presence beacon), written to .env.local by `convex dev`'
+			'Convex HTTP actions URL (webhooks, presence beacon), written to .env.local by the worktree setup'
 	},
 	PUBLIC_CLERK_PUBLISHABLE_KEY: {
 		public: true,
 		static: true,
-		description: 'Clerk publishable key (pk_test_ in .env.local, pk_live_ in .env.production)'
+		description: 'Clerk publishable key (pk_test_ in .env.development, pk_live_ in .env.production)'
 	},
 	PUBLIC_CLERK_BILLING_ENABLED: {
 		public: true,
@@ -28,6 +28,6 @@ export const variables = defineEnvVars({
 		public: false,
 		static: false,
 		description:
-			'Clerk secret key (sk_test_ in .env.local, a Worker secret in production): server-side sign-in and the SSR Convex token (hooks.server.ts)'
+			'Clerk secret key (sk_test_ in .env.local, pulled from the Convex deployment by the worktree setup; a Worker secret in production): server-side sign-in and the SSR Convex token (hooks.server.ts)'
 	}
 });

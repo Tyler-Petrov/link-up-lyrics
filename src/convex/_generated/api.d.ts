@@ -31,7 +31,6 @@ import type * as model_billing from "../model/billing.js";
 import type * as model_jam_session from "../model/jam_session.js";
 import type * as model_song from "../model/song.js";
 import type * as model_user from "../model/user.js";
-import type * as seed from "../seed.js";
 import type * as shared_chart_arrangement from "../shared/chart/arrangement.js";
 import type * as shared_chart_chords from "../shared/chart/chords.js";
 import type * as shared_chart_index from "../shared/chart/index.js";
@@ -73,7 +72,6 @@ declare const fullApi: ApiFromModules<{
   "model/jam_session": typeof model_jam_session;
   "model/song": typeof model_song;
   "model/user": typeof model_user;
-  seed: typeof seed;
   "shared/chart/arrangement": typeof shared_chart_arrangement;
   "shared/chart/chords": typeof shared_chart_chords;
   "shared/chart/index": typeof shared_chart_index;

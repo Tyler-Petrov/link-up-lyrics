@@ -29,7 +29,10 @@ export const ms = (duration: number) => (reduced() ? 0 : duration);
  * lines) lands at once, where flip's scale would stretch the words. Still for the reorder a drag and drop makes
  * (#lib/sortable marks the list): the drag already showed it.
  */
-export function glide(node: Element, { from, to }: { from: DOMRect; to: DOMRect }): AnimationConfig {
+export function glide(
+	node: Element,
+	{ from, to }: { from: DOMRect; to: DOMRect }
+): AnimationConfig {
 	const dx = from.left - to.left;
 	const dy = from.top - to.top;
 	const still = (!dx && !dy) || node.parentElement?.hasAttribute('data-dropping');

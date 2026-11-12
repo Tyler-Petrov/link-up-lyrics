@@ -25,7 +25,9 @@ try {
 	// The deployment this worktree develops against (selected by scripts/setup-dev-deployment.mjs).
 	const deployment = parseEnv(await readFile(join(root, '.env.local'), 'utf8')).CONVEX_DEPLOYMENT;
 	if (!deployment?.startsWith('dev:')) {
-		throw new Error('.env.local selects no Convex dev deployment; run `. scripts/worktree-setup.sh` first');
+		throw new Error(
+			'.env.local selects no Convex dev deployment; run `. scripts/worktree-setup.sh` first'
+		);
 	}
 
 	execFileSync('pnpm', ['exec', 'convex', 'export', '--path', exportedSeedPath], {
@@ -53,7 +55,10 @@ try {
 
 	await copyFile(exportedSeedPath, pendingSeedPath);
 	await rename(pendingSeedPath, seedPath);
-	execFileSync('pnpm', ['run', '--silent', 'seed:check', '--write'], { cwd: root, stdio: 'inherit' });
+	execFileSync('pnpm', ['run', '--silent', 'seed:check', '--write'], {
+		cwd: root,
+		stdio: 'inherit'
+	});
 	console.log(`Updated seed.zip and seed-schema.json from ${deployment}`);
 } finally {
 	await rm(temporaryDirectory, { recursive: true, force: true });

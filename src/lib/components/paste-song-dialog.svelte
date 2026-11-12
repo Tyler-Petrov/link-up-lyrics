@@ -69,7 +69,7 @@ Chords above the words work too`;
 					id="paste-text"
 					name="text"
 					bind:value={form.data.text}
-					class="h-[min(22rem,40dvh)] font-chart field-sizing-fixed placeholder:text-muted-foreground/50"
+					class="field-sizing-fixed h-[min(22rem,40dvh)] font-chart placeholder:text-muted-foreground/50"
 					{placeholder}
 					aria-invalid={form.errors.text ? true : undefined}
 				/>

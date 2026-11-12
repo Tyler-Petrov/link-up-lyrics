@@ -4,7 +4,8 @@ export const variables = defineEnvVars({
 	PUBLIC_CONVEX_URL: {
 		public: true,
 		static: true,
-		description: "Convex deployment URL, written to .env.local by the worktree setup (the branch's own deployment)"
+		description:
+			"Convex deployment URL, written to .env.local by the worktree setup (the branch's own deployment)"
 	},
 	PUBLIC_CONVEX_SITE_URL: {
 		public: true,

@@ -47,8 +47,8 @@
 			<h2 class="section-title">Hosting</h2>
 			<p class="section-lede">
 				You pay to host: creating jam sessions, going live, and inviting your band. Your library,
-				and being in someone else’s band, are always free. A plan buys the tool, never any rights
-				to the songs.
+				and being in someone else’s band, are always free. A plan buys the tool, never any rights to
+				the songs.
 			</p>
 		</header>
 		<HostingStatus always class="self-start" />

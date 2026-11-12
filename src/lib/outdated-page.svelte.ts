@@ -19,7 +19,9 @@ let hitOutdatedPageError = $state(false);
  * false and {@link outdatedPageNeedsReload} turns true at a later one.
  */
 export async function noteOutdatedPageError(error: unknown) {
-	if (!(error instanceof Error && outdatedPageErrors.some((pattern) => pattern.test(error.message))))
+	if (!(
+		error instanceof Error && outdatedPageErrors.some((pattern) => pattern.test(error.message))
+	))
 		return false;
 	hitOutdatedPageError = true;
 	return await updated.check();

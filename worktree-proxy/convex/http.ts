@@ -40,7 +40,9 @@ const leaseHandler = (
 http.route({
 	path: '/worktree-proxy/lease',
 	method: 'POST',
-	handler: leaseHandler((ctx, deployment) => ctx.runMutation(internal.targets.lease, { deployment }))
+	handler: leaseHandler((ctx, deployment) =>
+		ctx.runMutation(internal.targets.lease, { deployment })
+	)
 });
 http.route({
 	path: '/worktree-proxy/lease',

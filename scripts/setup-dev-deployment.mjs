@@ -26,9 +26,14 @@ function convex(args, { capture = false } = {}) {
 	});
 }
 
-const branch = execFileSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8' }).trim();
+const branch = execFileSync('git', ['branch', '--show-current'], {
+	cwd: root,
+	encoding: 'utf8'
+}).trim();
 if (!branch || ['main', 'master'].includes(branch)) {
-	throw new Error('Check out a feature branch first; main and a detached HEAD get no Convex deployment.');
+	throw new Error(
+		'Check out a feature branch first; main and a detached HEAD get no Convex deployment.'
+	);
 }
 // Fully qualified so the CLI can resolve it before .env.local selects anything.
 const reference = `home-maintenance-solution:link-up-lyrics-fd369:dev/${branch
@@ -45,7 +50,16 @@ const selection = spawnSync('pnpm', ['exec', 'convex', 'deployment', 'select', r
 if (selection.status === 0) {
 	process.stdout.write(selection.stdout);
 } else if (/not found/i.test(selection.stderr + selection.stdout)) {
-	convex(['deployment', 'create', reference, '--type', 'dev', '--select', '--expiration', 'in 14 days']);
+	convex([
+		'deployment',
+		'create',
+		reference,
+		'--type',
+		'dev',
+		'--select',
+		'--expiration',
+		'in 14 days'
+	]);
 } else {
 	process.stderr.write(selection.stderr + selection.stdout);
 	process.exit(selection.status ?? 1);
@@ -112,7 +126,8 @@ convex(['run', 'init']);
 let environment = await readFile(envFile, 'utf8');
 for (const name of ['CLERK_SECRET_KEY', 'WORKTREE_PROXY_SECRET']) {
 	const value = convex(['env', 'get', name], { capture: true }).trim();
-	if (!value) throw new Error(`${name} isn't set; add it with \`convex env default set --type dev\``);
+	if (!value)
+		throw new Error(`${name} isn't set; add it with \`convex env default set --type dev\``);
 	const line = `${name}=${value}`;
 	const pattern = new RegExp(`^${name}=.*$`, 'm');
 	environment = pattern.test(environment)

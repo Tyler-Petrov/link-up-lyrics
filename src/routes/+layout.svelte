@@ -46,7 +46,9 @@
 			seen = latest;
 		});
 	});
-	$effect(() => on(window, 'unhandledrejection', ({ reason }) => void noteOutdatedPageError(reason)));
+	$effect(() =>
+		on(window, 'unhandledrejection', ({ reason }) => void noteOutdatedPageError(reason))
+	);
 	$effect(() => {
 		if (outdatedPageNeedsReload()) location.reload();
 	});

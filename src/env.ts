@@ -25,6 +25,13 @@ export const variables = defineEnvVars({
 		description:
 			'"true" once Clerk Billing is set up (plan "pro", both prices): /account shows the <PricingTable>. Clerk throws when it renders with billing off.'
 	},
+	PUBLIC_POSTHOG_KEY: {
+		public: true,
+		static: true,
+		schema: (value) => value || undefined,
+		description:
+			'PostHog project API key (analytics and error tracking, #lib/posthog.ts). Unset, PostHog stays off.'
+	},
 	CLERK_SECRET_KEY: {
 		public: false,
 		static: false,

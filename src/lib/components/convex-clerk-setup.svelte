@@ -4,6 +4,7 @@
 	import { useClerkContext } from 'svelte-clerk/client';
 	import { api } from '#convex/_generated/api.js';
 	import { setAccount } from '#lib/account.svelte.js';
+	import { identify } from '#lib/posthog-browser.js';
 
 	type Props = {
 		/** Whether the server rendered for a signed-in person. */
@@ -44,6 +45,7 @@
 	const client = useConvexClient();
 	const convexAuth = useAuth();
 	const clerkUserId = $derived(clerk.isLoaded ? clerk.auth.userId : serverClerkUserId);
+	$effect(() => identify(clerkUserId ?? undefined));
 	// svelte-ignore state_referenced_locally
 	let syncedClerkUserId = $state(serverClerkUserId);
 	$effect(() => {

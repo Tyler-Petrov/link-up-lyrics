@@ -1,83 +1,106 @@
-@import "tailwindcss" source("../src");
-
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-    --radius: 0.65rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.141 0.005 285.823);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.141 0.005 285.823);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.141 0.005 285.823);
-    --primary: oklch(0.623 0.214 259.815);
-    --primary-foreground: oklch(0.97 0.014 254.604);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.967 0.001 286.375);
-    --muted-foreground: oklch(0.552 0.016 285.938);
-    --accent: oklch(0.967 0.001 286.375);
-    --accent-foreground: oklch(0.21 0.006 285.885);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.92 0.004 286.32);
-    --input: oklch(0.92 0.004 286.32);
-    --ring: oklch(0.623 0.214 259.815);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.141 0.005 285.823);
-    --sidebar-primary: oklch(0.623 0.214 259.815);
-    --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-    --sidebar-accent: oklch(0.967 0.001 286.375);
-    --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-    --sidebar-border: oklch(0.92 0.004 286.32);
-    --sidebar-ring: oklch(0.623 0.214 259.815);
+/*
+ * Tally: stage graphite with production-booth signals, dark first (plan §9). The neutrals are a cool, nearly
+ * grey graphite so phones and projectors render clean black-greys; three hues each do one job:
+ * aqua does things (and marks where we are), honey-amber is the music (chords), tally red means on air.
+ * Destructive is a pinker ruby so it never reads as Live. Dark text is chalk, a touch warm.
+ *
+ * Mirrored outside this file, keep in step: theme-color hexes in #lib/theme-colors.ts, and static/favicon.svg
+ * (graphite-800 tile, honey-400 note).
+ */
+@theme {
+	--color-graphite-50: oklch(0.975 0.003 250);
+	--color-graphite-100: oklch(0.945 0.004 250);
+	--color-graphite-200: oklch(0.89 0.006 250);
+	--color-graphite-300: oklch(0.76 0.01 250);
+	--color-graphite-600: oklch(0.47 0.01 250);
+	--color-graphite-700: oklch(0.385 0.01 250);
+	--color-graphite-750: oklch(0.345 0.01 250);
+	--color-graphite-800: oklch(0.3 0.01 250);
+	--color-graphite-850: oklch(0.27 0.009 250);
+	--color-graphite-900: oklch(0.235 0.009 250);
+	--color-graphite-950: oklch(0.165 0.008 250);
+	--color-chalk: oklch(0.96 0.006 85);
+
+	--color-aqua-400: oklch(0.8 0.1 196);
+	--color-aqua-700: oklch(0.52 0.088 205);
+	--color-honey-400: oklch(0.83 0.145 75);
+	--color-honey-700: oklch(0.52 0.12 62);
+	--color-tally-500: oklch(0.66 0.215 27);
+	--color-tally-600: oklch(0.57 0.22 27);
+	--color-ruby-400: oklch(0.7 0.16 5);
+	--color-ruby-600: oklch(0.55 0.2 5);
+	--color-mint-400: oklch(0.78 0.15 155);
+	--color-mint-600: oklch(0.53 0.13 155);
+
+	--font-chart: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
 }
-  
+
+/* Semantic tokens (shadcn's names, so its components follow the palette). mode-watcher toggles .dark. */
+:root {
+	--radius: 0.875rem;
+	--background: var(--color-graphite-50);
+	--foreground: var(--color-graphite-950);
+	--card: oklch(1 0 0);
+	--card-foreground: var(--color-graphite-950);
+	--popover: oklch(1 0 0);
+	--popover-foreground: var(--color-graphite-950);
+	--primary: var(--color-aqua-700);
+	--primary-foreground: oklch(1 0 0);
+	--secondary: var(--color-graphite-100);
+	--secondary-foreground: var(--color-graphite-950);
+	--muted: var(--color-graphite-100);
+	--muted-foreground: var(--color-graphite-600);
+	--accent: var(--color-graphite-200);
+	--accent-foreground: var(--color-graphite-950);
+	--destructive: var(--color-ruby-600);
+	--success: var(--color-mint-600);
+	--border: color-mix(in oklab, var(--color-graphite-700) 12%, transparent);
+	--input: color-mix(in oklab, var(--color-graphite-700) 18%, transparent);
+	/* Focus is the text colour, so it never reads as the aqua "current" outline. */
+	--ring: color-mix(in oklab, var(--color-graphite-950) 70%, transparent);
+	--chord: var(--color-honey-700);
+	--live: var(--color-tally-600);
+	/* The page-title halo is a dark-mode effect; on a light page it only smudges. */
+	--glow: transparent;
+}
+
 .dark {
-    --background: oklch(0.141 0.005 285.823);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.21 0.006 285.885);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.21 0.006 285.885);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.546 0.245 262.881);
-    --primary-foreground: oklch(0.379 0.146 265.522);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.274 0.006 286.033);
-    --muted-foreground: oklch(0.705 0.015 286.067);
-    --accent: oklch(0.274 0.006 286.033);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.488 0.243 264.376);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.21 0.006 285.885);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.546 0.245 262.881);
-    --sidebar-primary-foreground: oklch(0.379 0.146 265.522);
-    --sidebar-accent: oklch(0.274 0.006 286.033);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.488 0.243 264.376);
+	--background: var(--color-graphite-950);
+	--foreground: var(--color-chalk);
+	--card: var(--color-graphite-900);
+	--card-foreground: var(--color-chalk);
+	--popover: var(--color-graphite-900);
+	--popover-foreground: var(--color-chalk);
+	--primary: var(--color-aqua-400);
+	--primary-foreground: var(--color-graphite-950);
+	--secondary: var(--color-graphite-800);
+	--secondary-foreground: var(--color-chalk);
+	--muted: var(--color-graphite-850);
+	--muted-foreground: var(--color-graphite-300);
+	--accent: var(--color-graphite-750);
+	--accent-foreground: var(--color-chalk);
+	--destructive: var(--color-ruby-400);
+	--success: var(--color-mint-400);
+	--border: oklch(1 0 0 / 10%);
+	--input: oklch(1 0 0 / 14%);
+	--ring: color-mix(in oklab, var(--color-chalk) 70%, transparent);
+	--chord: var(--color-honey-400);
+	--live: var(--color-tally-500);
+	--glow: color-mix(in oklab, var(--color-aqua-400) 18%, transparent);
+}
+
+/* /live and the projector view: near-true black, so a projector's black level disappears. Always with .dark. */
+.stage {
+	--background: oklch(0.13 0.005 250);
 }
 
 @theme inline {
-	--radius-sm: calc(var(--radius) - 4px);
-	--radius-md: calc(var(--radius) - 2px);
-	--radius-lg: var(--radius);
-	--radius-xl: calc(var(--radius) + 4px);
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -93,30 +116,152 @@
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
+	--color-success: var(--success);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
-	--color-chart-1: var(--chart-1);
-	--color-chart-2: var(--chart-2);
-	--color-chart-3: var(--chart-3);
-	--color-chart-4: var(--chart-4);
-	--color-chart-5: var(--chart-5);
-	--color-sidebar: var(--sidebar);
-	--color-sidebar-foreground: var(--sidebar-foreground);
-	--color-sidebar-primary: var(--sidebar-primary);
-	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-	--color-sidebar-accent: var(--sidebar-accent);
-	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-	--color-sidebar-border: var(--sidebar-border);
-	--color-sidebar-ring: var(--sidebar-ring);
+	--color-chord: var(--chord);
+	--color-live: var(--live);
+	--radius-sm: calc(var(--radius) * 0.6);
+	--radius-md: calc(var(--radius) * 0.8);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) * 1.4);
+	--radius-2xl: calc(var(--radius) * 1.8);
+	--radius-3xl: calc(var(--radius) * 2.2);
+	--radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
 	}
-
+	html {
+		color-scheme: light;
+	}
+	html.dark {
+		color-scheme: dark;
+	}
 	body {
-		@apply bg-background text-foreground;
+		@apply bg-background text-foreground antialiased;
+	}
+	/* Selected text (the rename field selects its name on Make block) is a wash of the palette's aqua. Solid, so a
+	   chord's box and its word's don't double up where they overlap. */
+	::selection {
+		background-color: color-mix(in oklab, var(--primary) 35%, var(--background));
+	}
+	h1,
+	h2,
+	h3 {
+		text-wrap: balance;
+	}
+}
+
+@utility page-title {
+	@apply text-center text-4xl font-[750] tracking-tight sm:text-5xl;
+	text-shadow: 0 0 2rem var(--glow);
+}
+
+/* The floating header (app-header): pinned this far from the top, this tall. */
+:root {
+	--header-top: 0.75rem;
+	--header-height: 3rem;
+	--header-bottom: calc(var(--header-top) + var(--header-height));
+}
+
+/*
+ * Pinned chrome (the floating header, and bars pinned under it) floats over the page as it scrolls. Words scrolling
+ * up behind it vanish at its edge rather than peeking out around it: the cutouts at its rounded-2xl top corners are
+ * the page, and so is a strip --page-above tall over it. Painted behind the element's content (sticky gives the
+ * element the stacking context that needs).
+ */
+@utility page-corners {
+	&::before {
+		--r: var(--radius-2xl);
+		--outside: transparent calc(var(--r) - 1px), var(--background) var(--r);
+		content: '';
+		position: absolute;
+		z-index: -1;
+		inset-inline: 0;
+		bottom: calc(100% - var(--r));
+		height: calc(var(--page-above, 0px) + var(--r));
+		background:
+			linear-gradient(var(--background) 0 0) top / 100% var(--page-above, 0px) no-repeat,
+			radial-gradient(circle at 100% 100%, var(--outside)) bottom left / var(--r) var(--r) no-repeat,
+			radial-gradient(circle at 0 100%, var(--outside)) bottom right / var(--r) var(--r) no-repeat;
+	}
+}
+
+/*
+ * A bar that stays in view under the header, like the editor's and the console's status card: pinned a small gap
+ * below it, and the gap is filled with the page so words scrolling past never show between the two.
+ */
+@utility sticky-under-header {
+	@apply page-corners;
+	--under-header-gap: 0.5rem;
+	--page-above: var(--under-header-gap);
+	position: sticky;
+	top: calc(var(--header-bottom) + var(--under-header-gap));
+}
+
+/*
+ * Page changes and the theme switch are view transitions; the header (named in app-header) holds still. The old
+ * page fades out a little ahead of the new one fading in, so the two never sit on top of each other for long.
+ */
+::view-transition-group(*) {
+	animation-duration: 200ms;
+	animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+::view-transition-old(root) {
+	animation: 120ms ease-in both view-fade-out;
+}
+::view-transition-new(root) {
+	animation: 200ms cubic-bezier(0.215, 0.61, 0.355, 1) 40ms both view-fade-in;
+}
+@keyframes view-fade-out {
+	to {
+		opacity: 0;
+	}
+}
+@keyframes view-fade-in {
+	from {
+		opacity: 0;
+	}
+}
+
+/* Drag to reorder (#lib/sortable): the drop placeholder is a faded dashed outline; the dragged item lifts. */
+.sortable-ghost {
+	opacity: 0.5;
+	outline: 2px dashed var(--muted-foreground);
+	outline-offset: -2px;
+	border-radius: var(--radius-2xl);
+}
+.sortable-drag {
+	border-radius: var(--radius-2xl);
+	box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6);
+}
+@media (prefers-reduced-motion: no-preference) {
+	.sortable-drag {
+		scale: 1.02;
+	}
+}
+
+/* Clerk draws its cards a moment after its script loads: fade them in rather than pop. */
+.cl-rootBox {
+	animation: clerk-in 200ms ease-out;
+}
+@keyframes clerk-in {
+	from {
+		opacity: 0;
+	}
+}
+
+/* Reduced motion: CSS animations and transitions finish at once. Svelte's go through #lib/motion. From Beacon. */
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 1ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 1ms !important;
 	}
 }

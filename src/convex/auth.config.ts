@@ -1,6 +1,7 @@
-import { getAuthConfigProvider } from "@convex-dev/better-auth/auth-config";
-import type { AuthConfig } from "convex/server";
+import type { AuthConfig } from 'convex/server';
+import { env } from './_generated/server';
 
+/* Trusts tokens from the Clerk instance's "convex" JWT template. Plan §12. */
 export default {
-  providers: [getAuthConfigProvider()],
+	providers: [{ domain: env.CLERK_FRONTEND_API_URL, applicationID: 'convex' }]
 } satisfies AuthConfig;

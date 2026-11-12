@@ -1,9 +1,13 @@
-import { createAuth } from '../convex/auth';
+import { buildClerkProps } from 'svelte-clerk/server';
 import type { LayoutServerLoad } from './$types';
-import { getToken } from '@mmailaender/convex-better-auth-svelte/sveltekit';
 
-export const load = (async ({ cookies }) => {
-    return {
-        token: await getToken(createAuth, cookies)
-    };
-}) satisfies LayoutServerLoad;
+export const load: LayoutServerLoad = ({ locals }) => {
+	const auth = locals.auth();
+	return {
+		/** The Clerk user the server rendered for. hooks.server.ts has made sure they have a User row. */
+		clerkUserId: auth.userId ?? undefined,
+		// The browser authenticates Convex with this until Clerk loads, which starts after hydration.
+		convexToken: locals.convexToken,
+		...buildClerkProps(auth)
+	};
+};

@@ -45,12 +45,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # Builds against the new deployment: its URLs, and the development instance's public Clerk key in place of
-      # .env.production's.
+      # .env.production's. PostHog stays off, so previews (and their sign-in links) stay out of production's
+      # analytics.
       - name: Deploy the Convex preview and build against it
         id: convex
         run: |
           set -euo pipefail
-          export "$(grep -E '^PUBLIC_CLERK_PUBLISHABLE_KEY=' .env.development)"
+          export "$(grep -E '^PUBLIC_CLERK_PUBLISHABLE_KEY=' .env.development)" PUBLIC_POSTHOG_KEY=
           pnpm exec convex deploy --preview-create "$BRANCH" --yes \
             --cmd 'PUBLIC_CONVEX_SITE_URL="${PUBLIC_CONVEX_URL%.cloud}.site" pnpm build' \
             --cmd-url-env-var-name PUBLIC_CONVEX_URL 2>&1 | tee deploy.log

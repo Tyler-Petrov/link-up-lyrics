@@ -14,7 +14,7 @@ import {
 	PUBLIC_POSTHOG_KEY
 } from '$app/env/public';
 import { api } from '#convex/_generated/api.js';
-import { POSTHOG_HOST, redactSignInToken } from '#lib/posthog.js';
+import { POSTHOG_HOST } from '#lib/posthog.js';
 
 /** Marks the browser whose Clerk user already has a User row, so the sync below runs once, not per request. */
 const SYNCED_COOKIE = 'lul-user-synced';
@@ -53,8 +53,9 @@ export const handleError: HandleServerError = async ({ error, event, kind }) => 
 		flushInterval: 0
 	});
 	try {
-		await posthog.captureExceptionImmediate(error, event.locals.auth().userId ?? undefined, {
-			$current_url: redactSignInToken(event.url.href)
+		// No auth when the error came before Clerk's handler set it up.
+		await posthog.captureExceptionImmediate(error, event.locals.auth?.().userId ?? undefined, {
+			$current_url: event.url.href
 		});
 	} catch (posthogError) {
 		console.error('Failed to report a server error to PostHog', posthogError);

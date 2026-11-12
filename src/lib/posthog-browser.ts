@@ -1,6 +1,6 @@
 import posthog from 'posthog-js';
 import { PUBLIC_POSTHOG_KEY } from '$app/env/public';
-import { POSTHOG_HOST, redactSignInToken } from './posthog.js';
+import { POSTHOG_HOST } from './posthog.js';
 
 export function initPosthog() {
 	if (!PUBLIC_POSTHOG_KEY) return;
@@ -9,15 +9,7 @@ export function initPosthog() {
 		// Pageviews on client-side navigation, and exceptions nobody caught.
 		defaults: '2026-08-30',
 		capture_exceptions: true,
-		person_profiles: 'identified_only',
-		before_send: (event) => {
-			if (!event) return event;
-			for (const key of ['$current_url', '$pathname', '$referrer', '$prev_pageview_pathname']) {
-				const value = event.properties[key];
-				if (typeof value === 'string') event.properties[key] = redactSignInToken(value);
-			}
-			return event;
-		}
+		person_profiles: 'identified_only'
 	});
 }
 

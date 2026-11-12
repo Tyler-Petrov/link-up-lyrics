@@ -2,3 +2,10 @@ pnpm-lock.yaml
 /static/
 /src/convex/_generated/
 /src/lib/components/ui/
+# Vendored agent skills and their lockfile
+/.agents/
+/.claude/
+skills-lock.json
+/worktree-proxy/convex/_generated/
+# Written by pnpm seed:update
+seed-schema.json

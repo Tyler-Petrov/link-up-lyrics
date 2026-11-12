@@ -1,5 +1,5 @@
 import { ConvexError, v } from 'convex/values';
-import { parseSongText } from '#lib/chart/index.js';
+import { parseSongText } from '#convex/shared/chart/index.js';
 import { query } from './_generated/server';
 import { authMutation, authQuery, valibotMutation } from './functions';
 import { createSongFromTextSchema, songMetadataSchema } from './forms/song';

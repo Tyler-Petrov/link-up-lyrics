@@ -10,7 +10,7 @@ import {
 /*
  * The whole plan's schema (v3 + Tyler's brief), so feature work rarely edits it. New or removed fields land
  * as v.optional first: Convex validates existing documents against the schema. Ordered children use
- * fractional `order` numbers (#lib/order), so an insert anywhere writes exactly one row.
+ * fractional `order` numbers (#convex/shared/chart/order.ts), so an insert anywhere writes exactly one row.
  */
 export default defineSchema({
 	/* Mirror of the Clerk user, upserted from the auth identity (model/user.ts). Clerk stays the source of truth. */
@@ -79,7 +79,7 @@ export default defineSchema({
 		characters: v.array(characterValidator),
 		/*
 		 * This line starts a new line group (what the leader advances through live). Groups are derived
-		 * (#lib/chart groupArrangement): a block's first line always starts one, and a block with no
+		 * (#convex/shared/chart groupArrangement): a block's first line always starts one, and a block with no
 		 * markers is one group. Groups never cross a block.
 		 */
 		startsGroup: v.optional(v.boolean())
@@ -146,5 +146,8 @@ export default defineSchema({
 		usedEpoch: epoch()
 	})
 		.index('by_ownerId_and_usedEpoch', ['ownerId', 'usedEpoch'])
-		.index('by_jamSessionId_and_usedEpoch', ['jamSessionId', 'usedEpoch'])
+		.index('by_jamSessionId_and_usedEpoch', ['jamSessionId', 'usedEpoch']),
+
+	/* One row per production release, written once it's live (client_reload.ts), so open pages check right away. */
+	FrontendRelease: defineTable({})
 });

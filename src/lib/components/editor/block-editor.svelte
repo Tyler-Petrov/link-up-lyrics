@@ -8,7 +8,7 @@
 	import AudioLines from '@lucide/svelte/icons/audio-lines';
 	import type { SortableEvent } from 'sortablejs';
 	import type { Doc, Id } from '#convex/_generated/dataModel.js';
-	import type { ArrangementBlock, ChartGroup } from '#lib/chart/index.js';
+	import type { ArrangementBlock, ChartGroup } from '#convex/shared/chart/index.js';
 	import { confirmation } from '#lib/confirmation.svelte.js';
 	import ChartLine from '#lib/components/chart/chart-line.svelte';
 	import { glide, reveal } from '#lib/motion.js';

@@ -2,13 +2,19 @@
 // and tells us who's asking; their "convex" JWT then authenticates every Convex query the page renders on
 // the server (withServerConvexToken), and is handed to the browser so Convex is authenticated before Clerk's
 // script loads.
-import { sequence } from '@sveltejs/kit/hooks';
+import { sequence, type HandleServerError } from '@sveltejs/kit/hooks';
+import { PostHog } from 'posthog-node';
 import { withClerkHandler } from 'svelte-clerk/server';
 import { withServerConvexToken } from 'convex-svelte/sveltekit/server';
 import { ConvexHttpClient } from 'convex/browser';
 import { CLERK_SECRET_KEY } from '$app/env/private';
-import { PUBLIC_CLERK_PUBLISHABLE_KEY, PUBLIC_CONVEX_URL } from '$app/env/public';
+import {
+	PUBLIC_CLERK_PUBLISHABLE_KEY,
+	PUBLIC_CONVEX_URL,
+	PUBLIC_POSTHOG_KEY
+} from '$app/env/public';
 import { api } from '#convex/_generated/api.js';
+import { POSTHOG_HOST } from '#lib/posthog.js';
 
 /** Marks the browser whose Clerk user already has a User row, so the sync below runs once, not per request. */
 const SYNCED_COOKIE = 'lul-user-synced';
@@ -36,3 +42,22 @@ export const handle = sequence(
 		return withServerConvexToken(convexToken, () => resolve(event));
 	}
 );
+
+/** Server errors go to PostHog's error tracking, sent before the Worker's request ends. */
+export const handleError: HandleServerError = async ({ error, event, kind }) => {
+	// Only bugs: not errors thrown on purpose with error(), or SvelteKit's own, like a page that doesn't exist.
+	if (kind !== 'unknown' || !PUBLIC_POSTHOG_KEY) return;
+	const posthog = new PostHog(PUBLIC_POSTHOG_KEY, {
+		host: POSTHOG_HOST,
+		flushAt: 1,
+		flushInterval: 0
+	});
+	try {
+		// No auth when the error came before Clerk's handler set it up.
+		await posthog.captureExceptionImmediate(error, event.locals.auth?.().userId ?? undefined, {
+			$current_url: event.url.href
+		});
+	} catch (posthogError) {
+		console.error('Failed to report a server error to PostHog', posthogError);
+	}
+};

@@ -1,4 +1,4 @@
-import { buildArrangement, ordersAfter, type ParsedSong } from '#lib/chart/index.js';
+import { buildArrangement, ordersAfter, type ParsedSong } from '#convex/shared/chart/index.js';
 import type { Doc, Id } from '../_generated/dataModel';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 
@@ -6,7 +6,7 @@ import type { MutationCtx, QueryCtx } from '../_generated/server';
 const MAX_ROWS = 500;
 
 /**
- * A song's metadata plus its blocks in play order (#lib/chart buildArrangement): one index read for its
+ * A song's metadata plus its blocks in play order (#convex/shared/chart buildArrangement): one index read for its
  * sections, one for its loose lines, one per section. §4.3. Derive line groups with groupArrangement.
  */
 export async function loadArrangement(ctx: QueryCtx, song: Doc<'Song'>) {

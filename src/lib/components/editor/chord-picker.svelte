@@ -9,7 +9,7 @@
 		type ConstantTag
 	} from '#convex/constants.js';
 	import type { Chord } from '#convex/validators.js';
-	import { formatChord } from '#lib/chart/index.js';
+	import { formatChord } from '#convex/shared/chart/index.js';
 	import { reduced, reveal } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 	import { Advanced } from '#lib/components/ui/advanced/index.js';

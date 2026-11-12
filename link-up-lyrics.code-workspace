@@ -18,7 +18,7 @@
 			"**/src/app.css": "tailwindcss"
 		},
 		"search.exclude": {
-			"**/.cursor": true,
+			"**/.cursor": true
 		},
 		"typescript.tsdk": "node_modules/typescript/lib",
 		// "editor.codeActionsOnSave": {
@@ -27,7 +27,7 @@
 		// 	"source.addMissingImports.ts": "always"
 		// }
 		"workbench.tree.indent": 15,
-		"typescript.format.semicolons": "ignore",
+		"typescript.format.semicolons": "ignore"
 	},
 	"extensions": {
 		"recommendations": [

@@ -13,7 +13,7 @@
 		parseBracketLine,
 		serializeLine,
 		setChordAt
-	} from '#lib/chart/index.js';
+	} from '#convex/shared/chart/index.js';
 	import { reduced } from '#lib/motion.js';
 	import { cn } from '#lib/utils.js';
 	import { getSongEditor } from './editor.svelte.js';

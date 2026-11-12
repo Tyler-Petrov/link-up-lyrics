@@ -3,7 +3,7 @@
  * "N watching". No account needed for either. §14.4, §15.
  */
 import { ConvexError, v } from 'convex/values';
-import { stripChords } from '#lib/chart/index.js';
+import { stripChords } from '#convex/shared/chart/index.js';
 import { query } from './_generated/server';
 import { mutation } from './functions';
 import { presence, rateLimiter } from './components';

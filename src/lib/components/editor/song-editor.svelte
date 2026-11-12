@@ -19,7 +19,7 @@
 		orderBetween,
 		ordersBetween,
 		type ArrangementBlock
-	} from '#lib/chart/index.js';
+	} from '#convex/shared/chart/index.js';
 	import { useConnection } from '#lib/connection.svelte.js';
 	import { appear, morph, ms, reduced, reveal } from '#lib/motion.js';
 	import { sortable } from '#lib/sortable.js';

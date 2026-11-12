@@ -13,7 +13,7 @@ import { toast } from 'svelte-sonner';
 import { api } from '#convex/_generated/api.js';
 import type { Doc, Id } from '#convex/_generated/dataModel.js';
 import type { ChartCharacter, Chord } from '#convex/validators.js';
-import { buildArrangement, type ArrangementBlock } from '#lib/chart/index.js';
+import { buildArrangement, type ArrangementBlock } from '#convex/shared/chart/index.js';
 import { errorMessage } from '#lib/errors.js';
 import { reduced } from '#lib/motion.js';
 

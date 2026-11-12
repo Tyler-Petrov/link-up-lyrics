@@ -4,7 +4,7 @@
  * only the rows that moved. The song's "last edited" time is bumped by the triggers in functions.ts.
  */
 import { ConvexError, v, type Infer } from 'convex/values';
-import { fitsBetween, ordersBetween } from '#lib/chart/index.js';
+import { fitsBetween, ordersBetween } from '#convex/shared/chart/index.js';
 import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import { authMutation } from './functions';
@@ -271,7 +271,7 @@ async function writeGroupMarks(
 }
 
 /**
- * Sets or clears where line groups start (#lib/chart groupArrangement derives the groups). The editor sends
+ * Sets or clears where line groups start (#convex/shared/chart groupArrangement derives the groups). The editor sends
  * the marks for a selected range: its first line and the line after it start groups.
  */
 export const setGroupMarks = authMutation({

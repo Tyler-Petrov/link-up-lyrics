@@ -4,7 +4,7 @@
 	import { Button } from '#lib/components/ui/button/index.js';
 	import { Spinner } from '#lib/components/ui/spinner/index.js';
 
-	// Redeems a sign-in link from scripts/sign-in.mjs (a Clerk sign-in token), then goes on to where the link
+	// Redeems a sign-in link from `pnpm dev sign-in` (src/convex/dev.ts, a Clerk sign-in token), then goes on to where the link
 	// points (?url=, only ever on this site). From meal-tracker / Jairus. Dev only: tokens come from the dev
 	// instance's secret key.
 	const clerk = useClerkContext();

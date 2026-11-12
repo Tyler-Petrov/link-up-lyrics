@@ -2,8 +2,8 @@
 	import Repeat from '@lucide/svelte/icons/repeat-2';
 	import AudioLines from '@lucide/svelte/icons/audio-lines';
 	import type { Spelling } from '#convex/constants.js';
-	import type { ArrangementBlock } from '#lib/chart/index.js';
-	import { groupArrangement, hasChords } from '#lib/chart/index.js';
+	import type { ArrangementBlock } from '#convex/shared/chart/index.js';
+	import { groupArrangement, hasChords } from '#convex/shared/chart/index.js';
 	import ChartLine from './chart-line.svelte';
 
 	type Props = {

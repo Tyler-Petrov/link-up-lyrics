@@ -36,7 +36,7 @@ if (!branch || ['main', 'master'].includes(branch)) {
 	);
 }
 // Fully qualified so the CLI can resolve it before .env.local selects anything.
-const reference = `home-maintenance-solution:link-up-lyrics-fd369:dev/${branch
+const reference = `home-maintenance-solution:link-up-lyrics:dev/${branch
 	.toLowerCase()
 	.replaceAll(/[^a-z0-9-]+/g, '-')
 	.slice(0, 60)}`;
@@ -124,7 +124,7 @@ convex(['run', 'init']);
 // The secrets the frontend and `pnpm dev` need, from the deployment's environment (the project's defaults), so
 // there is one place to change them. The public Clerk key is committed in .env.development.
 let environment = await readFile(envFile, 'utf8');
-for (const name of ['CLERK_SECRET_KEY', 'WORKTREE_PROXY_SECRET']) {
+for (const name of ['CLERK_SECRET_KEY']) {
 	const value = convex(['env', 'get', name], { capture: true }).trim();
 	if (!value)
 		throw new Error(`${name} isn't set; add it with \`convex env default set --type dev\``);

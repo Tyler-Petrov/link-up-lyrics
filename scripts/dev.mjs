@@ -24,14 +24,7 @@ import {
 } from './dev-service.mjs';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
-const commands = new Set([
-	'restart',
-	'stop',
-	'servers',
-	'claim',
-	'unclaim',
-	...(signIn ? ['sign-in'] : [])
-]);
+const commands = new Set(['restart', 'stop', 'servers', ...(signIn ? ['sign-in'] : [])]);
 const frontendKeys = Object.keys(frontendScripts);
 const supportedFlags = new Set([...frontendKeys.map((key) => `--${key}`), '--no-typecheck']);
 
@@ -43,9 +36,7 @@ Usage:
   pnpm dev [options]   Start this worktree's dev server if it isn't running, then watch it
   pnpm dev restart     Restart this worktree's dev server on the same ports
   pnpm dev stop        Stop this worktree's dev server
-  pnpm dev servers     Pick dev servers in any worktree to stop
-  pnpm dev claim <path>    Send webhooks for <path> only to this worktree, with its reply
-  pnpm dev unclaim <path>  Go back to sending <path> to every worktree${
+  pnpm dev servers     Pick dev servers in any worktree to stop${
 		signIn
 			? `
   pnpm dev sign-in [user] [path]  Print a five-minute sign-in link to this
@@ -70,34 +61,17 @@ hours without a \`pnpm dev\` command or a Convex call from a browser or the CLI.
 Run without frontend options to choose with an interactive multi-select when
 the server isn't running yet.
 
-Webhooks from the Clerk development instance go to the worktree proxy, which
-sends each one to every running dev server and answers 200. A claim makes a
-path go only to this worktree, with its reply, until another worktree claims
-it, this dev server stops, or its lease lapses, like after the machine sleeps.
-
 Examples:
   pnpm dev
-  pnpm dev sign-in /library
-  pnpm dev claim /clerk-webhook`);
+  pnpm dev sign-in /library`);
 }
 
 function parseOptions(args) {
 	const command = args.find((argument) => commands.has(argument));
 	const after = args.indexOf(command) + 1;
-	// claim and unclaim take the webhook path after them, and sign-in an
-	// optional user ID and path, told apart by the path's leading /.
-	const operands =
-		command === 'claim' || command === 'unclaim'
-			? args.slice(after, after + 1)
-			: command === 'sign-in'
-				? args.slice(after, after + 2)
-				: [];
-	if ((command === 'claim' || command === 'unclaim') && !operands[0]?.startsWith('/')) {
-		console.error(
-			`Expected a webhook path starting with /, like \`pnpm dev ${command} /clerk-webhook\`.\n`
-		);
-		process.exit(1);
-	}
+	// sign-in takes an optional user ID and path, told apart by the path's
+	// leading /.
+	const operands = command === 'sign-in' ? args.slice(after, after + 2) : [];
 	const unknownArguments = args.filter(
 		(argument) =>
 			!supportedFlags.has(argument) &&
@@ -334,23 +308,6 @@ if (args[0] === '--service') {
 		const branch = currentBranch(projectRoot);
 		if (!socket) {
 			console.log(`No dev server is running for ${branch}.`);
-		} else if (command === 'claim' || command === 'unclaim') {
-			onMessages(socket, (message) => {
-				if (message.type !== 'state') return;
-				socket.end();
-				const claimed = message.state.claims.includes(path);
-				if (claimed === (command === 'claim')) {
-					console.log(
-						claimed ? `${branch} now answers ${path}.` : `${branch} no longer claims ${path}.`
-					);
-				} else {
-					console.error(
-						`The worktree proxy didn't take the ${command}. The dev server's output says why: ${logPath(projectRoot)}`
-					);
-					process.exitCode = 1;
-				}
-			});
-			send(socket, { type: command, path });
 		} else if (command === 'restart') {
 			send(socket, { type: 'restart' });
 			socket.end();

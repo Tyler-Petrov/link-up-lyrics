@@ -1,5 +1,3 @@
-packages:
-  - worktree-proxy
 onlyBuiltDependencies:
   - esbuild
   - workerd
